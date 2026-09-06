@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Генератор карти — maxmap</title>
+<style>
+  :root {
+    --bg: #f4f2ee; --panel: #fff; --line: #d8d3c9;
+    --ink: #2c2a26; --muted: #6f6a60; --accent: #3f6f4a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; min-height: 100vh;
+  }
+  aside {
+    width: 300px; flex: none; padding: 20px; background: var(--panel);
+    border-right: 1px solid var(--line); overflow-y: auto;
+  }
+  main { flex: 1; padding: 20px; overflow: auto; }
+  h1 { font-size: 17px; margin: 0 0 4px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+       color: var(--muted); margin: 22px 0 8px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 12px; margin: 0 0 18px; }
+  label { display: block; margin-bottom: 10px; font-size: 13px; }
+  label span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 3px; }
+  input, select {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--line);
+    border-radius: 5px; background: #fff; color: inherit; font: inherit;
+  }
+  .row { display: flex; gap: 8px; }
+  button {
+    width: 100%; padding: 9px; border: 0; border-radius: 5px; cursor: pointer;
+    background: var(--accent); color: #fff; font: 600 14px/1 inherit; margin-top: 6px;
+  }
+  button.ghost { background: #e8e4dc; color: var(--ink); }
+  button:hover { filter: brightness(1.07); }
+  .check { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; font-size: 13px; }
+  .check input { width: auto; }
+
+  #stage { display: inline-block; position: relative; line-height: 0;
+           border: 1px solid var(--line); background: #fff; }
+  #stage img { display: block; position: absolute; image-rendering: pixelated; }
+  #overlay { position: absolute; inset: 0; pointer-events: none; }
+  .mark { position: absolute; display: flex; align-items: center; justify-content: center;
+          font: 700 11px/1 system-ui; color: #fff; }
+  .mark.path { background: rgba(255,255,255,.34); }
+  .mark.start { background: #2f6ea8; border-radius: 50%; }
+  .mark.finish { background: #b3801f; border-radius: 50%; }
+
+  #stats { margin: 14px 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; }
+  #stats b { font-weight: 600; }
+  .ok { color: var(--accent); }
+  .bad { color: #b03c30; }
+  #errors { margin: 10px 0; padding: 10px 12px; border-radius: 6px;
+            background: #fbe9e7; color: #8d2e22; font-size: 13px; display: none; }
+  #errors ul { margin: 4px 0 0; padding-left: 18px; }
+  textarea {
+    width: 100%; height: 260px; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace;
+    border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fff;
+    color: var(--ink); resize: vertical;
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <h1>Генератор карти</h1>
+  <p class="sub">Шар 1 — статичний всесвіт. Інструмент часу розробки.</p>
+
+  <h2>Параметри світу</h2>
+  <label><span>Seed — той самий seed завжди дає ту саму карту</span>
+    <input id="seed" type="number" value="12345">
+  </label>
+  <div class="row">
+    <label style="flex:1"><span>Ширина</span><input id="width" type="number" value="24" min="5"></label>
+    <label style="flex:1"><span>Висота</span><input id="height" type="number" value="18" min="5"></label>
+  </div>
+  <label><span>Мін. довжина шляху</span><input id="minPathLength" type="number" value="25" min="1"></label>
+  <label><span>Braiding (0 = максимум тупиків)</span><input id="braiding" type="number" value="0.4" min="0" max="1" step="0.05"></label>
+
+  <h2>Місце збоку від дороги</h2>
+  <label><span>Ніші — кишені на 1 клітинку (частка)</span><input id="alcoves" type="number" value="0.35" min="0" max="1" step="0.05"></label>
+  <label><span>Галявини 2×2 (скільки)</span><input id="clearings" type="number" value="3" min="0" step="1"></label>
+
+  <h2>Картинки</h2>
+  <label><span>Резолвер</span><select id="resolver"></select></label>
+
+  <button id="newMap">Нова карта</button>
+  <button class="ghost" id="regenerate">Повторити за цим seed</button>
+  <button class="ghost" id="reresolve">Перемалювати (той самий світ)</button>
+
+  <h2>Дебаг-оверлей</h2>
+  <label class="check"><input type="checkbox" id="showPath"> найкоротший шлях</label>
+  <label class="check"><input type="checkbox" id="showMarks" checked> старт і фініш</label>
+
+  <h2>Зберегти</h2>
+  <label><span>id карти</span><input id="mapId" value="poc-01"></label>
+  <button class="ghost" id="download">Завантажити .js</button>
+</aside>
+
+<main>
+  <div id="stats"></div>
+  <div id="errors"></div>
+  <div id="stage"></div>
+  <h2>Вміст файлу src/maps/&lt;id&gt;.js</h2>
+  <textarea id="output" readonly></textarea>
+</main>
+
+<script src="../src/core/registry.js"></script>
+<script src="../src/tiles/flat.js"></script>
+<script src="mapgen/rng.js"></script>
+<script src="mapgen/world.js"></script>
+<script src="mapgen/resolve.js"></script>
+<script src="mapgen/resolvers/flat-2.js"></script>
+<script src="mapgen/serialize.js"></script>
+<script src="mapgen/validate.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var stage = $('stage');
+  var world = null, data = null;
+
+  Object.keys(MapGen.resolvers).forEach(function (id) {
+    var opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = MapGen.resolvers[id].name;
+    $('resolver').appendChild(opt);
+  });
+
+  function params() {
+    return {
+      seed: parseInt($('seed').value, 10) || 0,
+      width: parseInt($('width').value, 10),
+      height: parseInt($('height').value, 10),
+      minPathLength: parseInt($('minPathLength').value, 10),
+      braiding: parseFloat($('braiding').value),
+      alcoves: parseFloat($('alcoves').value),
+      clearings: parseInt($('clearings').value, 10),
+    };
+  }
+
+  // Кроки 1-2. Дорого — робиться тільки при «Згенерувати».
+  function generate() {
+    var built = MapGen.buildWorld(params());
+    if (built.error) { world = null; data = null; fail(built.error); return; }
+    world = MapGen.scatterTerrain(built);
+    reresolve();
+  }
+
+  // Крок 3 + серіалізація. Дешево — світ не чіпаємо.
+  function reresolve() {
+    if (!world) { generate(); return; }
+    var resolverId = $('resolver').value;
+    var tiles = MapGen.resolveTiles(world, resolverId);
+    data = MapGen.toMapData(world, tiles, { id: $('mapId').value, resolver: resolverId });
+    draw();
+    report();
+  }
+
+  function draw() {
+    stage.innerHTML = '';
+    var w = data.size.w, h = data.size.h;
+    var cell = Math.max(8, Math.floor(Math.min(
+      (window.innerWidth - 380) / w, (window.innerHeight - 240) / h
+    )));
+    stage.style.width = w * cell + 'px';
+    stage.style.height = h * cell + 'px';
+
+    // Це — увесь рендер. Ні прохідності, ні терену: тільки id → картинка.
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var img = document.createElement('img');
+        img.src = '../' + Game.tiles[data.tiles[y][x]].image;
+        img.width = cell; img.height = cell;
+        img.style.left = x * cell + 'px';
+        img.style.top = y * cell + 'px';
+        stage.appendChild(img);
+      }
+    }
+
+    var overlay = document.createElement('div');
+    overlay.id = 'overlay';
+    if ($('showPath').checked) {
+      world.path.forEach(function (p) { overlay.appendChild(mark('path', p, cell, '')); });
+    }
+    if ($('showMarks').checked) {
+      data.start.forEach(function (p, i) { overlay.appendChild(mark('start', p, cell, i + 1)); });
+      data.finish.forEach(function (p) { overlay.appendChild(mark('finish', p, cell, 'F')); });
+    }
+    stage.appendChild(overlay);
+  }
+
+  function mark(cls, p, cell, text) {
+    var el = document.createElement('div');
+    el.className = 'mark ' + cls;
+    el.style.left = p.x * cell + 'px';
+    el.style.top = p.y * cell + 'px';
+    el.style.width = cell + 'px';
+    el.style.height = cell + 'px';
+    el.textContent = text;
+    return el;
+  }
+
+  function report() {
+    var errors = MapGen.validateMap(data, Game.tiles, Game.props);
+    var m = world.meta;
+    $('stats').innerHTML =
+      'Seed: <b>' + m.seed + '</b>' +
+      '<span>Спрацював seed: <b>' + m.usedSeed + '</b> (спроб: ' + m.attempts + ')</span>' +
+      '<span>Шлях: <b>' + m.pathLength + '</b> клітинок</span>' +
+      '<span>Розмір: <b>' + data.size.w + ' × ' + data.size.h + '</b></span>' +
+      '<span class="' + (errors.length ? 'bad' : 'ok') + '">' +
+      (errors.length ? '✕ помилок: ' + errors.length : '✓ контракт дотримано') + '</span>';
+
+    var box = $('errors');
+    if (errors.length) {
+      box.style.display = 'block';
+      box.innerHTML = '<b>Порушені інваріанти:</b><ul>' +
+        errors.map(function (e) { return '<li>' + e + '</li>'; }).join('') + '</ul>';
+    } else {
+      box.style.display = 'none';
+    }
+
+    $('output').value = MapGen.toFileText(data);
+  }
+
+  function fail(message) {
+    stage.innerHTML = '';
+    $('stats').innerHTML = '<span class="bad">✕ ' + message + '</span>';
+    $('errors').style.display = 'none';
+    $('output').value = '';
+  }
+
+  // Нова карта = новий seed. Без цього повторне натискання дає ту саму
+  // карту (генератор детермінований), і здається, що кнопка не працює.
+  $('newMap').onclick = function () {
+    $('seed').value = Math.floor(Math.random() * 1000000);
+    generate();
+  };
+  $('regenerate').onclick = generate;
+  $('reresolve').onclick = reresolve;
+  $('resolver').onchange = reresolve;
+  $('mapId').oninput = function () { if (data) reresolve(); };
+  $('showPath').onchange = function () { if (data) draw(); };
+  $('showMarks').onchange = function () { if (data) draw(); };
+  $('download').onclick = function () {
+    if (!data) return;
+    var blob = new Blob([MapGen.toFileText(data)], { type: 'text/javascript' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = data.id + '.js';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  generate();
+})();
+</script>
+</body>
+</html>

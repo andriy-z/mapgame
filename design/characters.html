@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Мумі-троль — профіль</title>
+<style>
+  body{margin:0;background:#333;padding:24px;font:14px sans-serif;color:#eee}
+  .row{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end}
+  .big{width:260px;height:280px;background:#6fae5a;border-radius:12px}
+  .tok{width:90px;height:90px;background:#6fae5a;border-radius:12px}
+  svg{width:100%;height:100%;display:block}
+  span{display:block;text-align:center;margin-top:4px;font-size:12px}
+</style></head>
+<body>
+<h3>Мумі-троль — v5 (за референсом, який сподобався)</h3>
+<div class="row">
+  <div><div class="big" id="big1"></div><span>великий</span></div>
+  <div><div class="tok" id="tok1"></div><span>фішка на карті</span></div>
+</div>
+
+<script>
+function moomin({wave=true}={}){
+  const outline = '#17324a';
+  const body = '#ffffff';
+  const armRaised = wave
+    ? `<path d="M182,158 C196,152 208,138 210,122 C211,116 206,112 200,115 C194,118 190,130 186,144 C183,150 181,155 182,158 Z" fill="${body}"/>`
+    : `<path d="M180,160 C192,170 198,184 196,198 C195,204 189,206 185,202 C180,196 178,184 178,170 C178,166 179,163 180,160 Z" fill="${body}"/>`;
+  return `
+  <svg viewBox="0 0 300 300">
+    <g stroke="${outline}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+      <!-- tail -->
+      <g fill="${body}">
+        <path d="M104,226 C88,236 72,238 62,228 C56,222 58,213 66,213" fill="none"/>
+        <circle cx="68" cy="211" r="6"/>
+        <circle cx="58" cy="216" r="5"/>
+      </g>
+
+      <!-- arm down (left) -->
+      <path d="M115,168 C104,176 96,188 96,202 C96,208 101,211 106,208 C112,204 114,192 116,180 C117,176 117,172 115,168 Z"
+            fill="${body}"/>
+
+      <!-- arm raised or lowered (right) -->
+      ${armRaised}
+
+      <!-- legs -->
+      <path d="M121,233 C119,248 118,260 120,271 C126,274 134,274 140,271 C142,260 141,248 139,233 Z" fill="${body}"/>
+      <path d="M161,233 C159,248 158,260 160,271 C166,274 174,274 180,271 C182,260 181,248 179,233 Z" fill="${body}"/>
+      <ellipse cx="128" cy="274" rx="15" ry="9" fill="${body}"/>
+      <ellipse cx="172" cy="274" rx="15" ry="9" fill="${body}"/>
+
+      <!-- body -->
+      <path d="M112,232
+               C96,222 90,198 98,178
+               C104,164 118,153 134,148
+               C146,145 160,145 172,150
+               C186,156 196,172 194,192
+               C192,210 184,226 170,234
+               C152,242 128,242 112,232 Z"
+            fill="${body}"/>
+
+      <!-- ears -->
+      <path d="M129,64 C124,54 125,45 132,42 C139,45 140,54 136,64 Z" fill="${body}"/>
+      <path d="M164,62 C164,52 167,43 174,40 C181,44 180,53 173,63 Z" fill="${body}"/>
+
+      <!-- head + snout, one continuous shape -->
+      <path d="M150,58
+               C168,58 182,66 192,80
+               C204,96 208,112 200,128
+               C194,140 182,148 168,150
+               C158,152 148,152 138,150
+               C120,146 106,134 102,116
+               C99,102 104,86 116,74
+               C126,64 138,58 150,58 Z"
+            fill="${body}"/>
+    </g>
+
+    <!-- eyes -->
+    <ellipse cx="145" cy="96" rx="4.5" ry="5.5" fill="${outline}"/>
+    <ellipse cx="161" cy="98" rx="4.5" ry="5.5" fill="${outline}"/>
+  </svg>`;
+}
+document.getElementById('big1').innerHTML = moomin();
+document.getElementById('tok1').innerHTML = moomin();
+</script>
+</body></html>
