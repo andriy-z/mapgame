@@ -46,6 +46,7 @@
   .mark { position: absolute; display: flex; align-items: center; justify-content: center;
           font: 700 11px/1 system-ui; color: #fff; }
   .mark.path { background: rgba(255,255,255,.34); }
+  .mark.terrain { color: rgba(255,255,255,.75); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
   .mark.start { background: #2f6ea8; border-radius: 50%; }
   .mark.finish { background: #b3801f; border-radius: 50%; }
 
@@ -84,16 +85,24 @@
   <label><span>Ніші — кишені на 1 клітинку (частка)</span><input id="alcoves" type="number" value="0.35" min="0" max="1" step="0.05"></label>
   <label><span>Галявини 2×2 (скільки)</span><input id="clearings" type="number" value="3" min="0" step="1"></label>
 
-  <h2>Картинки</h2>
-  <label><span>Резолвер</span><select id="resolver"></select></label>
+  <h2>Ландшафт</h2>
+  <p class="sub" style="margin:-4px 0 10px">Ваги — яка частка <b>зон</b> дістанеться терену.
+     Площа на карті вийде інша: зона фарбує тільки ті клітинки, де стоїть стіна.</p>
+  <label><span>Розмір зони (клітинок на масив)</span><input id="terrainScale" type="number" value="40" min="4" step="5"></label>
+  <div class="row">
+    <label style="flex:1"><span>ліс</span><input id="forest" type="number" value="0.45" min="0" max="1" step="0.05"></label>
+    <label style="flex:1"><span>гори</span><input id="mountain" type="number" value="0.35" min="0" max="1" step="0.05"></label>
+    <label style="flex:1"><span>вода</span><input id="water" type="number" value="0.2" min="0" max="1" step="0.05"></label>
+  </div>
+
 
   <button id="newMap">Нова карта</button>
   <button class="ghost" id="regenerate">Повторити за цим seed</button>
-  <button class="ghost" id="reresolve">Перемалювати (той самий світ)</button>
 
   <h2>Дебаг-оверлей</h2>
   <label class="check"><input type="checkbox" id="showPath"> найкоротший шлях</label>
   <label class="check"><input type="checkbox" id="showMarks" checked> старт і фініш</label>
+  <label class="check"><input type="checkbox" id="showTerrain"> терен (Л / Г / В)</label>
 
   <h2>Зберегти</h2>
   <label><span>id карти</span><input id="mapId" value="poc-01"></label>
@@ -109,11 +118,11 @@
 </main>
 
 <script src="../src/core/registry.js"></script>
-<script src="../src/tiles/flat.js"></script>
+<script src="../src/tiles/terrain.js"></script>
 <script src="mapgen/rng.js"></script>
 <script src="mapgen/world.js"></script>
 <script src="mapgen/resolve.js"></script>
-<script src="mapgen/resolvers/flat-2.js"></script>
+<script src="mapgen/resolvers/autotile.js"></script>
 <script src="mapgen/serialize.js"></script>
 <script src="mapgen/validate.js"></script>
 <script>
@@ -124,12 +133,7 @@
   var stage = $('stage');
   var world = null, data = null;
 
-  Object.keys(MapGen.resolvers).forEach(function (id) {
-    var opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = MapGen.resolvers[id].name;
-    $('resolver').appendChild(opt);
-  });
+  var RESOLVER = 'autotile';
 
   function params() {
     return {
@@ -140,6 +144,10 @@
       braiding: parseFloat($('braiding').value),
       alcoves: parseFloat($('alcoves').value),
       clearings: parseInt($('clearings').value, 10),
+      terrainScale: parseInt($('terrainScale').value, 10),
+      forest: parseFloat($('forest').value),
+      mountain: parseFloat($('mountain').value),
+      water: parseFloat($('water').value),
     };
   }
 
@@ -154,9 +162,8 @@
   // Крок 3 + серіалізація. Дешево — світ не чіпаємо.
   function reresolve() {
     if (!world) { generate(); return; }
-    var resolverId = $('resolver').value;
-    var tiles = MapGen.resolveTiles(world, resolverId);
-    data = MapGen.toMapData(world, tiles, { id: $('mapId').value, resolver: resolverId });
+    var tiles = MapGen.resolveTiles(world, RESOLVER);
+    data = MapGen.toMapData(world, tiles, { id: $('mapId').value, resolver: RESOLVER });
     draw();
     report();
   }
@@ -186,6 +193,15 @@
     overlay.id = 'overlay';
     if ($('showPath').checked) {
       world.path.forEach(function (p) { overlay.appendChild(mark('path', p, cell, '')); });
+    }
+    if ($('showTerrain').checked) {
+      var letters = { forest: 'Л', mountain: 'Г', water: 'В', grass: '' };
+      for (var ty = 0; ty < h; ty++) {
+        for (var tx = 0; tx < w; tx++) {
+          var letter = letters[world.terrain[ty][tx]];
+          if (letter) overlay.appendChild(mark('terrain', { x: tx, y: ty }, cell, letter));
+        }
+      }
     }
     if ($('showMarks').checked) {
       data.start.forEach(function (p, i) { overlay.appendChild(mark('start', p, cell, i + 1)); });
@@ -242,11 +258,10 @@
     generate();
   };
   $('regenerate').onclick = generate;
-  $('reresolve').onclick = reresolve;
-  $('resolver').onchange = reresolve;
   $('mapId').oninput = function () { if (data) reresolve(); };
   $('showPath').onchange = function () { if (data) draw(); };
   $('showMarks').onchange = function () { if (data) draw(); };
+  $('showTerrain').onchange = function () { if (data) draw(); };
   $('download').onclick = function () {
     if (!data) return;
     var blob = new Blob([MapGen.toFileText(data)], { type: 'text/javascript' });

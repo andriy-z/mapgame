@@ -12,6 +12,10 @@
     braiding: 0.4,
     alcoves: 0.35,
     clearings: 3,
+    terrainScale: 40,
+    forest: 0.45,
+    mountain: 0.35,
+    water: 0.20,
     maxAttempts: 200,
   };
 
@@ -163,26 +167,89 @@
 
   // ── Старт і фініш ───────────────────────────────────────────────────
   //
-  // Пара сусідніх прохідних клітинок: старт — найближче до лівого
-  // верхнього кута, фініш — до правого нижнього.
-  function findPair(passable, w, h, corner) {
-    var best = null, bestScore = null;
+  // Кути сітки для цього не годяться: старт завжди в лівому верхньому,
+  // фініш у правому нижньому — і напрямок руху відомий ще до першого
+  // ходу, іди по діагоналі вниз-праворуч. Тому обидві точки шукаємо по
+  // відстанях у самому лабіринті, а не по кутах сітки.
+  //
+  // 1. З випадкової клітинки BFS → найдальша від неї. Це кінець
+  //    «діаметра» лабіринту: закуток на околиці, але з якого боку карти —
+  //    вирішує seed. Це старт.
+  // 2. BFS зі старту → фініш беремо ВИПАДКОВО серед клітинок, не ближчих
+  //    за поріг. Саме випадково, а не найдальшу: найдальша від старту так
+  //    само однозначна, як і кут, тільки складніше порахувати.
+  //
+  // Поріг — не менший за minPathLength (це гарантія 2) і не менший за
+  // 80 % діаметра (щоб фініш не опинявся десь посередині дороги).
+  function pickEndpoints(passable, w, h, rng, minPathLength) {
+    var cells = [];
     for (var y = 0; y < h; y++) {
       for (var x = 0; x < w; x++) {
-        if (!passable[y][x]) continue;
-        for (var d = 0; d < 4; d++) {
-          var nx = x + DIRS[d][0], ny = y + DIRS[d][1];
-          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-          if (!passable[ny][nx]) continue;
-          var score = corner === 'tl' ? (x + y + nx + ny) : -(x + y + nx + ny);
-          if (bestScore === null || score < bestScore) {
-            bestScore = score;
-            best = [{ x: x, y: y }, { x: nx, y: ny }];
-          }
+        if (passable[y][x] && passableNeighbours(passable, w, h, x, y) > 0) {
+          cells.push({ x: x, y: y });
         }
       }
     }
-    return best;
+    if (cells.length < 2) return null;
+
+    var probe = cells[Math.floor(rng() * cells.length)];
+    var startCell = farthest(bfs(passable, w, h, probe).dist, cells, rng);
+    if (!startCell) return null;
+
+    var search = bfs(passable, w, h, startCell);
+    var maxDist = 0;
+    cells.forEach(function (c) {
+      if (search.dist[c.y][c.x] > maxDist) maxDist = search.dist[c.y][c.x];
+    });
+
+    // Нижня межа 4 — щоб пари старту й фінішу не злиплись, якщо
+    // minPathLength поставили зовсім малий.
+    var threshold = Math.max(minPathLength, 4, Math.floor(maxDist * 0.8));
+    var far = cells.filter(function (c) { return search.dist[c.y][c.x] >= threshold; });
+    if (!far.length) return null;
+
+    var finishCell = far[Math.floor(rng() * far.length)];
+
+    return {
+      start: withNeighbour(passable, w, h, startCell, rng, null),
+      finish: withNeighbour(passable, w, h, finishCell, rng, search.dist),
+      search: search,
+      pathLength: search.dist[finishCell.y][finishCell.x],
+    };
+  }
+
+  // Найдальші клітинки від точки BFS; якщо їх кілька — випадкова з них.
+  function farthest(dist, cells, rng) {
+    var best = [], bestD = -1;
+    for (var i = 0; i < cells.length; i++) {
+      var d = dist[cells[i].y][cells[i].x];
+      if (d < 0) continue;
+      if (d > bestD) { bestD = d; best = [cells[i]]; }
+      else if (d === bestD) best.push(cells[i]);
+    }
+    if (!best.length) return null;
+    return best[Math.floor(rng() * best.length)];
+  }
+
+  // Друга клітинка пари — сусідня прохідна. Для фінішу беремо ту, що
+  // далі від старту: обидві клітинки фінішу мають бути «у фініші»,
+  // а не одна з них за крок назад по дорозі.
+  function withNeighbour(passable, w, h, cell, rng, dist) {
+    var options = [];
+    for (var d = 0; d < 4; d++) {
+      var nx = cell.x + DIRS[d][0], ny = cell.y + DIRS[d][1];
+      if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+      if (passable[ny][nx]) options.push({ x: nx, y: ny });
+    }
+    if (!options.length) return null;
+    var mate;
+    if (dist) {
+      mate = options[0];
+      options.forEach(function (o) { if (dist[o.y][o.x] > dist[mate.y][mate.x]) mate = o; });
+    } else {
+      mate = options[Math.floor(rng() * options.length)];
+    }
+    return [{ x: cell.x, y: cell.y }, mate];
   }
 
   // ── BFS: зв'язність, довжина шляху, сам шлях ────────────────────────
@@ -237,16 +304,21 @@
       if (!carved) return { error: 'Замала карта: потрібно щонайменше 5 × 5.' };
 
       var w = params.width, h = params.height, passable = carved.passable;
-      var start = findPair(passable, w, h, 'tl');
-      var finish = findPair(passable, w, h, 'br');
-      if (!start || !finish) { rejected.push('немає місця під старт/фініш'); continue; }
 
-      var search = bfs(passable, w, h, start[0]);
+      // Окремий потік випадковості: копання лабіринту й вибір точок не
+      // мають зсувати одне одному послідовність.
+      var pickRng = MapGen.makeRng((usedSeed ^ 0x2545f491) >>> 0);
+      var picked = pickEndpoints(passable, w, h, pickRng, params.minPathLength);
+      if (!picked || !picked.start || !picked.finish) {
+        rejected.push('немає місця під старт/фініш'); continue;
+      }
+
+      var start = picked.start, finish = picked.finish, search = picked.search;
 
       if (search.reached !== countPassable(passable, w, h)) {
         rejected.push('ізольовані зони'); continue;
       }
-      var pathLength = search.dist[finish[0].y][finish[0].x];
+      var pathLength = picked.pathLength;
       if (pathLength < params.minPathLength) {
         rejected.push('шлях ' + pathLength); continue;
       }
@@ -264,6 +336,8 @@
             width: params.width, height: params.height,
             minPathLength: params.minPathLength, braiding: params.braiding,
             alcoves: params.alcoves, clearings: params.clearings,
+            terrainScale: params.terrainScale, forest: params.forest,
+            mountain: params.mountain, water: params.water,
           },
           pathLength: pathLength,
           attempts: attempt + 1,
@@ -283,7 +357,7 @@
     var world = base;
     var hash = MapGen.makeHash(base.meta.usedSeed);
 
-    world.outsideTerrain = 'rock';
+    world.outsideTerrain = 'mountain';
     world.terrain = null;
     world.props = [];
 
@@ -311,18 +385,107 @@
 
   // ── Крок 2: терен ───────────────────────────────────────────────────
   //
-  // Поки заглушка: терен повторює прохідність. Тут потім з'являться
-  // гори/ліс/вода/містки — назовні це не видно, контракт не змінюється.
+  // Прохідні клітинки — трава. Непрохідні треба чимось заповнити: ліс, гори,
+  // вода. Кидаємо по карті кілька центрів зон, кожному даємо терен за вагами,
+  // і клітинка бере терен найближчого центру. Так виходять суцільні масиви,
+  // а не сіль-перець.
+  //
+  // Дві дрібниці роблять межі живими: відстань трохи зашумлена (щоб зони не
+  // різались по лінійці) і потім один прохід згладжування (щоб від того шуму
+  // не лишилось поодиноких крапок чужого терену).
+  //
+  // На прохідність це не впливає ніяк. Терен — внутрішня річ генератора,
+  // у контракт шару 1 він не потрапляє: назовні йдуть тільки id картинок.
   MapGen.scatterTerrain = function (world) {
-    var t = [];
-    for (var y = 0; y < world.size.h; y++) {
-      var row = [];
-      for (var x = 0; x < world.size.w; x++) {
-        row.push(world.passable[y][x] ? 'grass' : 'rock');
+    var w = world.size.w, h = world.size.h;
+    var p = world.meta.params;
+    var rng = MapGen.makeRng((world.meta.usedSeed ^ 0x5bf03635) >>> 0);
+
+    var weights = [];
+    ['forest', 'mountain', 'water'].forEach(function (name) {
+      if (p[name] > 0) weights.push([name, p[name]]);
+    });
+    if (!weights.length) weights.push(['mountain', 1]);
+
+    var total = 0;
+    weights.forEach(function (pair) { total += pair[1]; });
+
+    function pickTerrain() {
+      var r = rng() * total;
+      for (var i = 0; i < weights.length; i++) {
+        r -= weights[i][1];
+        if (r <= 0) return weights[i][0];
       }
-      t.push(row);
+      return weights[weights.length - 1][0];
     }
-    world.terrain = t;
+
+    var count = Math.max(3, Math.round((w * h) / Math.max(4, p.terrainScale)));
+
+    // Терени роздаємо зонам за вагами, а не кидаємо кубик кожній окремо:
+    // на десятку зон незалежний розіграш легко дає карту зовсім без води.
+    var quota = [];
+    weights.forEach(function (pair) {
+      var n = Math.floor(count * pair[1] / total);
+      for (var i = 0; i < n; i++) quota.push(pair[0]);
+    });
+    while (quota.length < count) quota.push(pickTerrain());
+    MapGen.shuffle(quota, rng);
+
+    var seeds = [];
+    for (var i = 0; i < count; i++) {
+      seeds.push({ x: rng() * w, y: rng() * h, terrain: quota[i] });
+    }
+
+    function nearest(x, y) {
+      var best = seeds[0].terrain, bestD = Infinity;
+      for (var i = 0; i < seeds.length; i++) {
+        var dx = x + 0.5 - seeds[i].x, dy = y + 0.5 - seeds[i].y;
+        // Шум залежить від позиції, а не від порядку обходу: та сама карта
+        // з тим самим seed дає ті самі межі.
+        var noise = ((world.hash(x, y) ^ (i * 2654435761)) >>> 0) / 4294967296;
+        var d = (dx * dx + dy * dy) * (0.88 + 0.24 * noise);
+        if (d < bestD) { bestD = d; best = seeds[i].terrain; }
+      }
+      return best;
+    }
+
+    var terrain = [];
+    for (var y = 0; y < h; y++) {
+      var row = [];
+      for (var x = 0; x < w; x++) {
+        row.push(world.passable[y][x] ? 'grass' : nearest(x, y));
+      }
+      terrain.push(row);
+    }
+
+    world.terrain = smoothTerrain(world, terrain);
     return world;
   };
+
+  // Клітинка, у якої три чи чотири непрохідні сусіди одного чужого терену,
+  // переходить до них. Один прохід — рівно щоб зняти крапки на межах.
+  function smoothTerrain(world, terrain) {
+    var w = world.size.w, h = world.size.h;
+    var next = [];
+    for (var y = 0; y < h; y++) next.push(terrain[y].slice());
+
+    for (y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        if (world.passable[y][x]) continue;
+        var tally = {};
+        for (var d = 0; d < 4; d++) {
+          var nx = x + DIRS[d][0], ny = y + DIRS[d][1];
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          if (world.passable[ny][nx]) continue;
+          var t = terrain[ny][nx];
+          tally[t] = (tally[t] || 0) + 1;
+        }
+        for (var key in tally) {
+          if (tally[key] >= 3 && key !== terrain[y][x]) next[y][x] = key;
+        }
+      }
+    }
+    return next;
+  }
+
 })();
