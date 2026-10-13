@@ -32,7 +32,7 @@
   .row { display: flex; gap: 8px; }
   button {
     width: 100%; padding: 9px; border: 0; border-radius: 5px; cursor: pointer;
-    background: var(--accent); color: #fff; font: 600 14px/1 inherit; margin-top: 6px;
+    background: var(--accent); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; margin-top: 6px;
   }
   button.ghost { background: #e8e4dc; color: var(--ink); }
   button:hover { filter: brightness(1.07); }
@@ -118,13 +118,13 @@
 </main>
 
 <script src="../src/core/registry.js"></script>
-<script src="../src/tiles/terrain.js"></script>
-<script src="mapgen/rng.js"></script>
-<script src="mapgen/world.js"></script>
-<script src="mapgen/resolve.js"></script>
-<script src="mapgen/resolvers/autotile.js"></script>
-<script src="mapgen/serialize.js"></script>
-<script src="mapgen/validate.js"></script>
+<script src="../skin/skin.js"></script>
+<script src="../src/mapgen/rng.js"></script>
+<script src="../src/mapgen/world.js"></script>
+<script src="../src/mapgen/resolve.js"></script>
+<script src="../src/mapgen/resolvers/autotile.js"></script>
+<script src="../src/mapgen/serialize.js"></script>
+<script src="../src/mapgen/validate.js"></script>
 <script>
 (function () {
   'use strict';
@@ -181,7 +181,7 @@
     for (var y = 0; y < h; y++) {
       for (var x = 0; x < w; x++) {
         var img = document.createElement('img');
-        img.src = '../' + Game.tiles[data.tiles[y][x]].image;
+        img.src = '../' + Game.images[data.tiles[y][x]];
         img.width = cell; img.height = cell;
         img.style.left = x * cell + 'px';
         img.style.top = y * cell + 'px';
@@ -222,7 +222,7 @@
   }
 
   function report() {
-    var errors = MapGen.validateMap(data, Game.tiles, Game.props);
+    var errors = MapGen.validateMap(data, Game.images, Game.props);
     var m = world.meta;
     $('stats').innerHTML =
       'Seed: <b>' + m.seed + '</b>' +

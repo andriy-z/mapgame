@@ -1,0 +1,55 @@
+// Згенеровано tools/map-generator.html — не правити руками.
+// Контракт: docs/05-generator-karty.md, шар 1.
+
+Game.registerMap({
+  id: 'poc-01',
+  version: 1,
+  size: { w: 24, h: 18 },
+
+  passable: [
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,true,true,true,false],
+    [false,false,false,false,false,true,false,false,false,true,false,true,false,true,false,false,false,false,false,true,false,true,false,false],
+    [false,true,true,true,true,true,false,true,true,true,false,true,true,true,false,true,true,true,false,true,true,true,false,false],
+    [false,true,false,true,true,true,false,true,false,false,false,false,false,false,false,true,false,true,false,false,false,true,true,false],
+    [false,true,false,true,true,true,false,true,false,true,true,true,true,true,true,true,false,true,true,true,false,true,false,false],
+    [false,true,false,false,false,true,false,true,true,false,false,false,false,false,false,false,true,true,false,false,false,true,true,false],
+    [false,true,false,true,true,true,false,true,false,true,true,true,true,true,true,true,false,true,true,true,false,true,false,false],
+    [false,true,false,true,true,false,false,true,false,true,false,false,false,false,false,true,false,true,false,true,true,true,false,false],
+    [false,true,false,true,true,true,true,true,false,true,false,true,true,true,true,true,false,true,false,true,true,true,false,false],
+    [false,true,false,true,false,false,false,false,false,true,false,false,false,true,false,false,false,false,false,true,false,true,false,false],
+    [false,true,false,true,false,true,true,true,true,true,false,true,false,true,true,true,true,true,true,true,false,true,false,false],
+    [false,true,false,true,false,true,false,false,false,true,false,true,false,false,false,false,false,false,false,true,false,true,false,false],
+    [false,true,false,true,false,true,true,true,true,true,false,true,true,true,false,true,true,true,true,true,false,true,true,false],
+    [false,true,false,true,false,true,false,false,false,true,false,false,false,true,false,true,false,true,false,false,false,true,false,false],
+    [false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,false],
+    [false,true,false,false,false,true,false,true,false,false,true,false,false,false,false,true,false,false,false,true,false,true,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+  ],
+  start: [ { x: 13, y: 2 }, { x: 13, y: 3 } ],
+  finish: [ { x: 9, y: 9 }, { x: 9, y: 8 } ],
+
+  tiles: [
+    ['forest-247','forest-199','forest-199','forest-199','forest-199','forest-199','forest-199','forest-199','forest-199','forest-199','forest-199','forest-199','forest-193','mountain-1','water-7','water-193','mountain-7','mountain-199','mountain-199','mountain-199','mountain-193','water-7','water-193','mountain-31'],
+    ['forest-241','grass-0','grass-0','grass-0','grass-0','grass-2','grass-2','grass-2','grass-1','grass-2','grass-2','grass-0','mountain-16','grass-2','grass-1','grass-0','grass-0','grass-0','grass-0','grass-2','grass-1','grass-0','grass-1','mountain-31'],
+    ['forest-245','forest-68','forest-68','forest-68','forest-64','grass-0','forest-20','forest-68','forest-64','grass-1','forest-16','grass-2','mountain-1','grass-2','mountain-16','water-4','water-68','water-68','water-80','grass-1','water-0','grass-0','mountain-28','mountain-127'],
+    ['forest-241','grass-1','grass-1','grass-0','grass-1','grass-1','forest-17','grass-1','grass-1','grass-2','forest-17','grass-2','grass-0','grass-0','mountain-17','grass-0','grass-0','grass-0','water-17','grass-0','grass-1','grass-0','mountain-7','mountain-223'],
+    ['forest-241','grass-2','forest-16','grass-1','grass-0','grass-0','forest-17','grass-2','forest-20','forest-68','forest-65','mountain-4','mountain-68','mountain-68','mountain-65','grass-0','water-0','grass-0','water-1','mountain-4','mountain-80','grass-0','grass-1','mountain-31'],
+    ['forest-241','grass-1','forest-17','grass-1','grass-1','grass-0','forest-17','grass-0','forest-1','grass-0','grass-1','grass-1','grass-1','grass-1','grass-2','grass-1','mountain-0','grass-2','grass-2','grass-1','mountain-17','grass-2','mountain-4','mountain-95'],
+    ['forest-241','grass-2','forest-21','forest-68','forest-64','grass-1','forest-17','grass-1','grass-1','forest-4','forest-64','mountain-4','mountain-68','mountain-68','mountain-68','mountain-64','grass-2','grass-0','water-0','mountain-4','mountain-81','grass-0','grass-1','mountain-31'],
+    ['forest-241','grass-1','forest-17','grass-1','grass-0','grass-0','forest-17','grass-0','forest-16','grass-1','grass-1','grass-0','grass-0','grass-1','grass-0','grass-2','mountain-16','grass-1','grass-2','grass-0','mountain-1','grass-2','mountain-28','mountain-127'],
+    ['forest-241','grass-0','forest-17','grass-2','grass-2','forest-4','forest-65','grass-1','forest-17','grass-0','forest-20','forest-64','mountain-4','mountain-68','mountain-64','grass-2','mountain-17','grass-0','mountain-16','grass-2','grass-2','grass-2','mountain-31','mountain-255'],
+    ['forest-241','grass-0','forest-17','grass-1','grass-0','grass-0','grass-1','grass-0','forest-17','grass-2','forest-17','grass-1','grass-2','grass-0','grass-0','grass-2','mountain-17','grass-2','mountain-17','grass-2','grass-1','grass-0','mountain-31','mountain-255'],
+    ['forest-241','grass-2','forest-17','grass-1','forest-20','forest-68','forest-68','forest-68','forest-65','grass-1','forest-21','forest-68','forest-80','grass-2','mountain-4','mountain-68','mountain-69','mountain-68','mountain-65','grass-2','mountain-16','grass-2','mountain-31','mountain-255'],
+    ['forest-241','grass-2','forest-17','grass-2','forest-1','grass-2','grass-0','grass-0','grass-0','grass-2','forest-17','grass-2','forest-17','grass-2','grass-0','grass-1','grass-0','grass-0','grass-0','grass-0','mountain-17','grass-0','mountain-31','mountain-255'],
+    ['forest-241','grass-0','forest-17','grass-2','water-16','grass-2','water-0','forest-4','forest-64','grass-1','forest-17','grass-1','forest-5','forest-68','forest-84','forest-68','forest-68','forest-68','forest-64','grass-2','mountain-1','grass-1','mountain-7','mountain-223'],
+    ['forest-241','grass-2','forest-1','grass-2','water-17','grass-2','grass-0','grass-2','grass-1','grass-2','forest-17','grass-1','grass-2','grass-2','forest-17','grass-2','grass-0','grass-0','grass-0','grass-2','forest-16','grass-1','grass-0','mountain-31'],
+    ['forest-193','grass-2','water-0','grass-1','water-1','grass-0','water-4','water-68','water-64','grass-0','forest-5','forest-68','forest-64','grass-0','forest-1','grass-2','forest-16','grass-0','forest-4','forest-68','forest-65','grass-1','mountain-4','mountain-71'],
+    ['water-112','grass-1','grass-0','grass-2','grass-1','grass-2','grass-0','grass-2','grass-0','grass-0','grass-0','grass-1','grass-1','grass-2','grass-0','grass-0','forest-17','grass-1','grass-0','grass-2','grass-1','grass-1','grass-0','forest-28'],
+    ['water-241','grass-1','water-28','water-124','water-112','grass-0','water-16','grass-0','water-28','water-112','grass-0','forest-28','forest-124','forest-124','forest-112','grass-2','forest-29','forest-124','forest-112','grass-1','forest-16','grass-0','forest-28','forest-127'],
+    ['water-253','water-124','water-127','water-255','water-253','water-124','water-125','water-124','water-127','water-241','forest-28','forest-127','forest-255','forest-255','forest-253','forest-124','forest-127','forest-255','forest-253','forest-124','forest-125','forest-124','forest-127','forest-255'],
+  ],
+  props: [],
+
+  meta: {"seed":58,"usedSeed":58,"params":{"width":24,"height":18,"minPathLength":25,"braiding":0.4,"alcoves":0.35,"clearings":3,"terrainScale":40,"forest":0.45,"mountain":0.35,"water":0.2},"pathLength":39,"generator":"world-v1","resolver":"autotile"},
+});

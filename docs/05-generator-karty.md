@@ -567,9 +567,9 @@ Game.registerMap({
 Єдиний місток між id у `tiles` і картинкою. Рендер більше нічого не знає.
 
 ```js
-// src/tiles/terrain.js — у циклі по теренах і 47 масках
-Game.registerTile({ id: 'grass-0',    image: 'assets/tiles/grass-0.png' });
-Game.registerTile({ id: 'forest-213', image: 'assets/tiles/forest-213.png' });
+// skin/skin.js — у циклі по теренах і 47 масках
+Game.registerImage('grass-0',    'skin/grass-0.png');
+Game.registerImage('forest-213', 'skin/forest-213.png');
 ```
 
 Додати новий вигляд = новий рядок тут + новий PNG. Рендер не чіпаємо.
@@ -585,7 +585,7 @@ Game.isPassable(map, x, y)   // → map.passable[y][x]
 ## Що з цим робить рендер
 
 ```js
-drawCell(x, y, Game.tiles[map.tiles[y][x]].image);
+drawCell(x, y, Game.images[map.tiles[y][x]]);
 ```
 
 І все. Рендер не відкриває `passable`, `start`, `finish`, `meta`.
@@ -631,15 +631,15 @@ drawCell(x, y, Game.tiles[map.tiles[y][x]].image);
 
 ```
 tools/map-generator.html         генератор + в'юер в одному
-tools/mapgen/rng.js              rng() і hash() — детермінований випадок
-tools/mapgen/world.js            крок 1 (лабіринт) + крок 2 (терен зонами)
-tools/mapgen/resolve.js          крок 3: реєстр резолверів
-tools/mapgen/resolvers/autotile.js  автотайлінг: 8 сусідів, 47 варіантів
-tools/mapgen/serialize.js        world + tiles -> дані карти + текст файлу
-tools/mapgen/validate.js         8 інваріантів контракту
-src/core/registry.js             Game.registerTile / registerProp / registerMap
-src/tiles/terrain.js             144 плитки ландшафту
-assets/tiles/*.png               grass-0..2 + {forest,mountain,water}-<маска>
+src/mapgen/rng.js              rng() і hash() — детермінований випадок
+src/mapgen/world.js            крок 1 (лабіринт) + крок 2 (терен зонами)
+src/mapgen/resolve.js          крок 3: реєстр резолверів
+src/mapgen/resolvers/autotile.js  автотайлінг: 8 сусідів, 47 варіантів
+src/mapgen/serialize.js        world + tiles -> дані карти + текст файлу
+src/mapgen/validate.js         8 інваріантів контракту
+src/core/registry.js             Game.registerImage / registerProp / registerMap
+skin/skin.js                     id картинок скіна (плитки й не тільки)
+skin/*.png                       grass-0..2 + {forest,mountain,water}-<маска> + фішки, мітки
 ```
 
 В'юер відкривається подвійним кліком (`file://` працює — ні `fetch`, ні
@@ -647,12 +647,11 @@ assets/tiles/*.png               grass-0..2 + {forest,mountain,water}-<маск�
 
 # Коли працює генератор [ЗАФІКСОВАНО]
 
-- **Інструмент часу розробки**, не рантайм гри.
-- Генеруємо → дивимось прев'ю → якщо добре, зберігаємо дані карти у
-  `src/maps/<id>.js`. Гра в рантаймі лише читає готові дані.
-- Логіку генерації тримаємо в окремих plain-JS файлах (`<script>`), щоб
-  згодом можна було викликати і в рантаймі без переписування.
-- Місце інструмента: тека `tools/` (сторінка `tools/map-generator.html`).
+- **І інструмент, і рантайм.** Логіка генерації — plain-JS файли в
+  `src/mapgen/`; їх підключають і гра (кнопка «Нова гра», див.
+  `docs/04-dynamika.md`), і сторінка `tools/map-generator.html`.
+- У генераторі: дивимось прев'ю → якщо добре, зберігаємо дані карти у
+  `src/maps/<id>.js` (готові карти-рівні).
 
 # Поза межами першої версії
 

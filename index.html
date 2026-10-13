@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>maxmap</title>
+<style>
+  :root { --t: 64px; --ink: #2b2a26; --bar: #33402f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #1d231b; color: #fff; overflow: hidden;
+    font: 18px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    user-select: none;
+  }
+
+  /* ─── верхня панель ─── */
+  #hud {
+    width: 100%; height: 56px; flex: none; padding: 0 16px;
+    display: flex; align-items: center; gap: 24px; background: var(--bar);
+  }
+  #day { font-weight: 700; min-width: 90px; }
+  #turn { display: flex; align-items: center; gap: 10px; }
+  #turn img { width: 40px; height: 40px; }
+  #steps { display: flex; }
+  #steps img { width: 44px; height: 44px; margin: 0 -10px; }
+  #hud button {
+    padding: 9px 18px; border: 0; border-radius: 8px; cursor: pointer;
+    font-family: inherit; font-size: 17px; font-weight: 700;
+  }
+  #hud button:hover { filter: brightness(1.08); }
+  #endTurn { margin-left: auto; background: #f2c14e; color: var(--ink); }
+  #newGame { background: #5b7a52; color: #fff; }
+  #hud #mute { background: none; padding: 4px 6px; font-size: 26px; line-height: 1; }
+
+  /* ─── карта ─── */
+  #stageWrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+  #viewport {
+    position: relative; overflow: hidden; cursor: pointer;
+    width: calc(var(--t) * 11); height: calc(var(--t) * 9);
+  }
+  #world { position: absolute; left: 0; top: 0; transition: transform 220ms ease-out; }
+  #world.no-anim, #world.no-anim .hero { transition: none; }
+  .cell { position: absolute; width: var(--t); height: var(--t); display: block; pointer-events: none; }
+  .tile { image-rendering: auto; }
+  .mark.far { opacity: .6; }
+  .hero { transition: left 170ms linear, top 170ms linear; }
+  .hero.left { scale: -1 1; }   /* окремо від transform — не б'ється з гойданням */
+  .hero.active { animation: sway 1.6s ease-in-out infinite; z-index: 2; }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-5deg); }
+    50%      { transform: rotate(5deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero.active { animation: none; }
+  }
+
+  /* ─── підказки й перемога ─── */
+  #toast {
+    position: fixed; left: 50%; top: 76px; transform: translateX(-50%);
+    padding: 10px 20px; border-radius: 10px; background: rgba(30, 30, 26, .85);
+    font-weight: 600; opacity: 0; transition: opacity 200ms; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #win {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, .55);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #win[hidden] { display: none; }
+  #win .card {
+    background: #fffaf0; color: var(--ink); padding: 32px 48px; border-radius: 16px;
+    text-align: center;
+  }
+  #win h1 { margin: 0 0 8px; font-size: 34px; }
+  #win img { width: 72px; height: 72px; }
+  #win button {
+    margin: 18px 6px 0; padding: 12px 28px; border: 0; border-radius: 10px;
+    background: #3f6f4a; color: #fff; cursor: pointer;
+    font-family: inherit; font-size: 18px; font-weight: 700;
+  }
+  #win #again { background: #8a8270; }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div id="day"></div>
+  <div id="turn"><img id="turnHero" alt=""><span id="turnName"></span></div>
+  <div id="steps" title="Скільки кроків лишилось"></div>
+  <button id="endTurn">Кінець ходу</button>
+  <button id="mute" title="Звук"></button>
+  <button id="newGame" title="Нова карта">Нова гра</button>
+</div>
+
+<div id="stageWrap">
+  <div id="viewport"><div id="world"></div></div>
+</div>
+
+<div id="toast"></div>
+
+<div id="win" hidden>
+  <div class="card">
+    <img id="winImg" alt="">
+    <h1>Ви дійшли!</h1>
+    <div id="winDays"></div>
+    <button id="again">Ще раз</button>
+    <button id="winNew">Нова карта</button>
+  </div>
+</div>
+
+<!-- Маніфест: додати персонажа чи карту = один рядок тут. Порядок важливий:
+     спершу реєстр, потім скін і сутності, потім ядро. -->
+<script src="src/core/registry.js"></script>
+<script src="skin/skin.js"></script>
+<script src="src/characters/moomintroll.js"></script>
+<script src="src/characters/snufkin.js"></script>
+<script src="src/maps/poc-01.js"></script>
+<script src="src/mapgen/rng.js"></script>
+<script src="src/mapgen/world.js"></script>
+<script src="src/mapgen/resolve.js"></script>
+<script src="src/mapgen/resolvers/autotile.js"></script>
+<script src="src/mapgen/serialize.js"></script>
+<script src="src/mapgen/validate.js"></script>
+<script src="src/core/rules.js"></script>
+<script src="src/core/view.js"></script>
+<script src="src/core/sound.js"></script>
+<script src="src/core/engine.js"></script>
+<script src="src/core/input.js"></script>
+<script>
+  Game.input.attach();
+  Game.engine.start('poc-01', ['moomintroll', 'snufkin']);
+</script>
+</body>
+</html>

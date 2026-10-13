@@ -4,18 +4,33 @@
 var Game = (function () {
   'use strict';
 
-  var tiles = {};
+  var images = {};
+  var sounds = {};
+  var characters = {};
   var props = {};
   var maps = {};
 
   return {
-    tiles: tiles,
+    images: images,
+    sounds: sounds,
+    characters: characters,
     props: props,
     maps: maps,
 
-    // Плитка: id → картинка. Це все, що знає рендер.
-    registerTile: function (tile) {
-      tiles[tile.id] = tile;
+    // Картинка скіна: id → шлях до файлу. Плитки, фішки, точки шляху —
+    // усе тут. Уся решта гри знає картинки лише за id.
+    registerImage: function (id, file) {
+      images[id] = file;
+    },
+
+    // Звук скіна: id → шлях до файлу (музика, фанфара фінішу).
+    registerSound: function (id, file) {
+      sounds[id] = file;
+    },
+
+    // Персонаж: ім'я, скільки кроків за хід, id картинки фішки.
+    registerCharacter: function (character) {
+      characters[character.id] = character;
     },
 
     // Великий об'єкт поверх плиток (Еверест і т.д.). Розмір у клітинках.
