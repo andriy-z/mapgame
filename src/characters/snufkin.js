@@ -4,5 +4,5 @@ Game.registerCharacter({
   id: 'snufkin',
   name: 'Нюхмумрик',
   move: 5,            // кроків за хід
-  image: 'snufkin',      // id картинки зі скіна
+  avatar: 'snufkin',   // з якою аватаркою починає (src/content/avatars.js)
 });

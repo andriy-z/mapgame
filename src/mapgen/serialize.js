@@ -13,6 +13,7 @@
       size: { w: world.size.w, h: world.size.h },
 
       passable: world.passable,
+      terrain: world.terrain,
       start: world.start,
       finish: world.finish,
 
@@ -44,6 +45,11 @@
     lines.push('  passable: [');
     data.passable.forEach(function (row) {
       lines.push('    [' + row.join(',') + '],');
+    });
+    lines.push('  ],');
+    lines.push('  terrain: [');
+    data.terrain.forEach(function (row) {
+      lines.push("    ['" + row.join("','") + "'],");
     });
     lines.push('  ],');
     lines.push('  start: ' + pointPair(data.start) + ',');

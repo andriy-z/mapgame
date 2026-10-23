@@ -26,6 +26,8 @@
         ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
       };
       document.addEventListener('keydown', function (e) {
+        if (Game.task.isOpen()) return;   // клавіші — вікну завдання
+        if (Game.quest.isOpen()) { Game.quest.key(e); return; }   // і космосу
         if (arrows[e.key]) {
           e.preventDefault();
           engine.nudge(arrows[e.key][0], arrows[e.key][1]);
@@ -40,6 +42,8 @@
       // Тому музика вмикається з першим кліком чи клавішею.
       document.addEventListener('pointerdown', Game.sound.unlock);
       document.addEventListener('keydown', Game.sound.unlock);
+      Game.task.attach();
+      Game.quest.attach();
       $('mute').addEventListener('click', function () { this.blur(); Game.sound.toggleMute(); });
 
       // blur — щоб наступний Enter не натиснув кнопку вдруге.

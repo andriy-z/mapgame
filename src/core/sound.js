@@ -58,10 +58,13 @@
       sync();
     },
 
-    play: function (id) {
+    // rate — висота: 1 як записано, 1.12 — трохи вище (так дзвіночок
+    // «йде вгору» з кожною складеною літерою).
+    play: function (id, rate) {
       if (muted || !unlocked || !Game.sounds[id]) return;
       var a = new Audio(Game.sounds[id]);
       a.volume = SFX_VOLUME;
+      if (rate) { a.preservesPitch = false; a.playbackRate = rate; }
       a.play().catch(function () {});
     },
 

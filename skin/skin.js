@@ -32,9 +32,28 @@
     MASKS.forEach(function (mask) { add(terrain + '-' + mask); });
   });
 
-  // ─── Фішки героїв ───────────────────────────────────────────────────
+  // ─── Аватарки фішок (src/content/avatars.js), стандарт — docs/07-fishka.md
   add('moomintroll');
   add('snufkin');
+  add('snorkmaiden');   // Хропся
+  add('moominmamma');
+  add('moominpappa');
+  add('fredrikson');
+
+  // ─── Артефакти й бонуси ─────────────────────────────────────────────
+  add('wing');          // крильце (праве; ліве — дзеркально)
+  add('boots');         // чоботи-скороходи (пара на одній картинці)
+  add('duck');          // качечка — ходити по воді
+  add('stilts');        // ходулі — переступати через ліс
+  add('sled');          // санчата — через гори
+  add('pepper');        // перчинка — чхати й підлітати
+  add('balloon');       // повітряна кулька — разовий політ
+  add('harmonica');     // губна гармошка — разово покликати друга
+  add('badge-star');    // зірка над фішкою за розв'язане завдання
+  add('bonus-orb');     // середина позначки бонусу «крильця»
+  add('telescope');     // підзорна труба — бачити далі крізь туман (приз з космосу)
+  add('hoverboard');    // літаюча дошка — над водою (приз з космосу)
+  add('antennae');      // антенки прибульця — іноді +2 кроки (приз з космосу)
 
   // ─── Позначки на карті ──────────────────────────────────────────────
   add('step');       // точка шляху, куди герой дійде цього ходу
@@ -42,9 +61,30 @@
   add('target');     // мітка «іти сюди»
   add('target-no');  // мітка «сюди не можна»
   add('finish');     // клітинка фінішу
+  add('task');       // точка-завдання: чарівна книжка
+  add('portal');     // телепорт у космос (src/quests/)
+
+  // ─── Космос: сейф у темній кімнаті (src/quests/dark-room.js) ────────
+  add('safe');          // зачинений, з кодовим замком
+  add('safe-open');     // навстіж, а в ньому — приз
+
+  // ─── Картинки до слів (src/content/words.js) ────────────────────────
+  ['sun', 'fish', 'house', 'beetle', 'mushroom', 'star', 'cloud', 'heart', 'ball', 'boat',
+   'cat', 'owl', 'frog', 'pear', 'cherry', 'lemon', 'watermelon', 'cheese', 'egg', 'cake', 'key', 'cup']
+    .forEach(function (name) { add('pic-' + name); });
 
   // ─── Звуки ──────────────────────────────────────────────────────────
   // Інший формат (mp3, ogg) — поміняти розширення тут.
   Game.registerSound('music', DIR + 'music.wav');   // фонова музика, по колу
   Game.registerSound('win', DIR + 'win.wav');       // фанфара на фініші
+  Game.registerSound('right', DIR + 'right.wav');   // правильна відповідь
+  Game.registerSound('wrong', DIR + 'wrong.wav');   // неправильна
+  Game.registerSound('letter', DIR + 'letter.wav'); // літера стала на місце
+  Game.registerSound('bonus', DIR + 'bonus.wav');   // отримав приз
+  Game.registerSound('sneeze', DIR + 'sneeze.wav'); // апчхи! (перчинка)
+  Game.registerSound('balloon', DIR + 'balloon.wav');     // кулька злітає
+  Game.registerSound('harmonica', DIR + 'harmonica.wav'); // гармошка грає
+  Game.registerSound('click', DIR + 'click.wav');         // кнопка кодового замка
+  Game.registerSound('unlock', DIR + 'unlock.wav');       // сейф відчинився (космос)
+  Game.registerSound('beep', DIR + 'beep.wav');           // біп-біп антенок
 })();

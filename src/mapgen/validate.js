@@ -28,6 +28,14 @@
       if (row.length !== w) errors.push('tiles[' + y + ']: ' + row.length + ' id замість ' + w);
     });
 
+    // 2a. форма terrain (якщо є — за ним правила знають, де вода)
+    if (data.terrain) {
+      if (data.terrain.length !== h) errors.push('terrain: ' + data.terrain.length + ' рядків замість ' + h);
+      data.terrain.forEach(function (row, y) {
+        if (row.length !== w) errors.push('terrain[' + y + ']: ' + row.length + ' значень замість ' + w);
+      });
+    }
+
     // 3. периметр
     for (var x = 0; x < w; x++) {
       if (data.passable[0][x] || data.passable[h - 1][x]) { errors.push('периметр не суцільний (колонка ' + x + ')'); break; }
