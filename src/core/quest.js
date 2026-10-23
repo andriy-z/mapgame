@@ -7,8 +7,9 @@
 // пройдено, onClose(false) — герой повернувся сам (кнопка ✕).
 //
 // Рівень — VIEW.w × VIEW.h клітинок, як екран карти, тільки без камери.
-// Кроки тут не рахуються і перешкод нема — герой іде, куди вкаже гравець,
-// мишкою чи стрілками, так само як на карті. Тому застрягнути неможливо.
+// Кроки тут не рахуються — герой іде, куди вкаже гравець, мишкою чи
+// стрілками, так само як на карті. Стіни (level.wall) він обходить; тип
+// квесту ставить їх так, щоб до всього можна було дійти.
 //
 // Тип квесту (Game.registerQuestType) — це:
 //   title                  — підказка вгорі: що треба зробити;
@@ -18,7 +19,9 @@
 //                            шляху). true — зупинитись тут.
 // level.prize — id картинки призу (показати, як герой його знаходить),
 // level.closed() — true, коли рівень уже закрили (для своїх таймерів),
-// level.move(x, y) — переставити героя.
+// level.move(x, y) — переставити героя,
+// level.wall(x, y) — поставити стіну (у start), level.isWall(x, y),
+// level.solid(x, y) — до цієї клітинки йти можна, а крізь неї — ні (сейф).
 // Виконав мету — тип кличе level.finish(ms): трохи милуємось (ms — скільки,
 // якщо треба довше, ніж звичайно) і назад на карту.
 
@@ -40,6 +43,8 @@
   var cursor = null;    // клітинка, яку вказує гравець
   var planEls = [];
   var busy = false;     // герой іде або квест уже пройдено
+  var walls = {};       // 'x,y' → true
+  var solids = {};      // 'x,y' → true: сюди можна, крізь — ні
 
   function place(el, x, y) {
     el.style.left = 'calc(var(--t) * ' + x + ')';
@@ -77,6 +82,8 @@
     onClose = null;
     type = level = me = cursor = null;
     planEls = [];
+    walls = {};
+    solids = {};
     var space = $('space');
     space.classList.remove('open');
     setTimeout(function () {
@@ -87,13 +94,33 @@
     cb(solved);
   }
 
-  // Шлях до клітинки: спершу вбік, потім вгору-вниз. Перешкод нема.
+  function isWall(x, y) { return !!walls[x + ',' + y]; }
+
+  // Найкоротший шлях до клітинки в обхід стін (пошук ушир); у стіну — null.
   function path(to) {
-    var cells = [{ x: me.x, y: me.y }];
-    var x = me.x, y = me.y;
-    while (x !== to.x) { x += to.x > x ? 1 : -1; cells.push({ x: x, y: y }); }
-    while (y !== to.y) { y += to.y > y ? 1 : -1; cells.push({ x: x, y: y }); }
-    return cells;
+    if (isWall(to.x, to.y)) return null;
+    var from = {}, queue = [{ x: me.x, y: me.y }];
+    from[me.x + ',' + me.y] = null;
+    while (queue.length) {
+      var c = queue.shift();
+      if (c.x === to.x && c.y === to.y) {
+        var cells = [];
+        for (var k = c.x + ',' + c.y; k; k = from[k]) {
+          var xy = k.split(',');
+          cells.unshift({ x: +xy[0], y: +xy[1] });
+        }
+        return cells;
+      }
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+        var n = { x: c.x + d[0], y: c.y + d[1] }, key = n.x + ',' + n.y;
+        if (n.x < 0 || n.y < 0 || n.x >= VIEW.w || n.y >= VIEW.h) return;
+        if (key in from || isWall(n.x, n.y)) return;
+        if (solids[key] && (n.x !== to.x || n.y !== to.y)) return;
+        from[key] = c.x + ',' + c.y;
+        queue.push(n);
+      });
+    }
+    return null;
   }
 
   // Точки шляху до вказаної клітинки — лише поки герой стоїть.
@@ -103,6 +130,7 @@
     planEls = [];
     if (busy || !cursor || (cursor.x === me.x && cursor.y === me.y)) return;
     var p = path(cursor);
+    if (!p) return;
     p.slice(1).forEach(function (c, i) {
       var el = image(i === p.length - 2 ? 'target' : 'step', 'cell mark');
       place(el, c.x, c.y);
@@ -140,6 +168,7 @@
   function go() {
     if (!level || busy || !cursor || (cursor.x === me.x && cursor.y === me.y)) return;
     var p = path(cursor);
+    if (!p) return;
     busy = true;
     showPlan();   // поки йде — точок шляху не видно
     walk(p, 1);
@@ -158,6 +187,8 @@
       busy = false;
       cursor = null;
       planEls = [];
+      walls = {};
+    solids = {};
 
       var stage = $('spaceStage');
       stage.innerHTML = '';
@@ -183,6 +214,9 @@
         closed: function () { return level !== mine; },
         // переставити героя (відскочив від сейфа — src/quests/dark-room.js)
         move: function (x, y) { me.x = x; me.y = y; place(me.el, x, y); },
+        wall: function (x, y) { walls[x + ',' + y] = true; },
+        solid: function (x, y) { solids[x + ',' + y] = true; },
+        isWall: isWall,
         // мету виконано: трохи милуємось — і назад на карту
         finish: function (ms) {
           level.done = true;

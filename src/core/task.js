@@ -4,6 +4,8 @@
 // onClose(false) — закрили хрестиком чи Escape (можна повернутись пізніше).
 // Замість id можна дати сам тип { title, render } — так кодовий замок
 // темної кімнати (src/quests/dark-room.js) відкривається в тому ж вікні.
+// render(box, finish, fail): finish() — розв'язано, fail() — закрити як
+// нерозв'язане (замок після трьох помилок).
 
 (function () {
   'use strict';
@@ -35,7 +37,7 @@
       onClose = done;
       $('taskTitle').textContent = type.title;
       $('taskBody').innerHTML = '';
-      type.render($('taskBody'), function () { close(true); });
+      type.render($('taskBody'), function () { close(true); }, function () { close(false); });
       $('task').hidden = false;
     },
 

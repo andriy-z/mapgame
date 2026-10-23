@@ -1,9 +1,13 @@
-// Космічний квест «Темна кімната»: на космічній станції вимкнулось світло.
-// Герой ходить з ліхтариком — навколо нього світло, решта в темряві, а де
-// вже світив, лишається напівтемно. У темряві сховані цифри: посвітив на
-// цифру — вона спалахує і стрибає в рядок угорі. Ще там живуть звірята:
-// посвітиш — кіт «Мяу!», сова «Угу!». Часом десь у темряві щось блисне —
-// там цифра, ще не знайдена.
+// Космічний квест «Темна кімната»: на космічній станції вимкнулось світло,
+// а кімната — маленький хелловінський лабіринт. Герой ходить з ліхтариком —
+// навколо нього світло, решта в темряві, а де вже світив, лишається
+// напівтемно. Стіни видно й у темряві, гарбузи-ліхтарики світяться самі.
+//
+// У темряві сховані цифри. Посвітив на цифру — вона спалахує і зникає, а
+// вгорі загоряється зірочка. Цифри треба ЗАПАМ'ЯТАТИ: більше їх ніде не
+// видно — ні вгорі, ні на замку. Ще там живуть мешканці: посвітиш —
+// привид «Бу!», кажан «Пі-пі!». Часом десь у темряві щось блисне — там
+// цифра, ще не знайдена.
 //
 // У кутку стоїть сейф з кодовим замком, на ньому лампочка: червона, поки
 // знайдено не все, зелена — коли все. Сейф важкий: герой у нього
@@ -14,6 +18,8 @@
 //   2-й     — набрати найбільшу з них;
 //   3-й     — скільки разом дві цифри;
 //   далі    — найбільша чи сума, навмання.
+// Код перевіряється, коли набрано весь; спроб три. Не вгадав тричі або
+// закрив замок — цифри розбігаються: нові, в інших місцях, шукай знову.
 // Скільки разів пройдено — у localStorage браузера (STORE).
 // Код правильний — сейф відчиняється, з нього вилітає приз, вмикається
 // світло. Як працює рівень — src/core/quest.js.
@@ -25,21 +31,30 @@
   var LIGHT = 2;     // освітлено: квадрат відстані до героя ≤ 2 (3 × 3 клітинки)
   var GLOW = 5;      // напівтемрява довкола — видно обриси
   var GLINT_MS = 3500;   // як часто щось блискає там, де ще не знайдена цифра
+  var SHOW_MS = 1600;    // скільки знайдена цифра світиться, перш ніж зникнути
+  var TRIES = 3;         // спроб набрати код
+
+  // Лабіринт: стільки коротких стінок (2–4 клітинки, деякі з загином).
+  // Стінки не торкаються одна одної — тож закутків, куди не дійти, нема.
+  var WALLS = 9;
 
   // Хто живе в темряві: картинка й що каже, коли посвітиш.
   var FRIENDS = [
+    { image: 'hw-ghost', says: 'Бу!' },
+    { image: 'hw-bat', says: 'Пі-пі!' },
     { image: 'pic-cat', says: 'Мяу!' },
     { image: 'pic-owl', says: 'Угу!' },
-    { image: 'pic-frog', says: 'Ква-ква!' },
-    { image: 'pic-beetle', says: 'Дзззз!' },
   ];
   var FRIENDS_COUNT = 3;
+  var PUMPKINS = 2;   // світяться в темряві
+  var CANDLES = 2;    // видно, коли посвітиш
+  var WEBS = 3;       // у кутках біля стін
 
   // Яким буває код і як про нього питає замок.
   var KINDS = {
-    digits: { count: 3, title: 'Набери цей код!' },
-    max: { count: 3, title: 'Код — найбільша цифра!' },
-    sum: { count: 2, title: 'Код — скільки разом?' },
+    digits: { count: 3, title: 'Набери цифри, які знайшов, по порядку!' },
+    max: { count: 3, title: 'Яка цифра була найбільша?' },
+    sum: { count: 2, title: 'Скільки разом дві цифри?' },
   };
 
   var room = null;   // усе про цей прохід кімнати
@@ -76,6 +91,7 @@
   }
 
   function d2(a, b) { return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y); }
+  function near(a, b, r) { return Math.abs(a.x - b.x) <= r && Math.abs(a.y - b.y) <= r; }
 
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -84,28 +100,102 @@
     return e;
   }
 
-  // Клітинки для цифр і звірят: випадкові, не біля героя, не біля сейфа
-  // і не впритул одна до одної.
-  function spots(n, level, start, safe) {
+  // ─── лабіринт ───────────────────────────────────────────────────────
+
+  // Чи можна з from дійти до кожної вільної клітинки.
+  function reachable(level, wall, from) {
+    var seen = {}, queue = [from], count = 1, total = level.w * level.h - Object.keys(wall).length;
+    seen[from.x + ',' + from.y] = true;
+    while (queue.length) {
+      var c = queue.shift();
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+        var x = c.x + d[0], y = c.y + d[1], key = x + ',' + y;
+        if (x < 0 || y < 0 || x >= level.w || y >= level.h || seen[key] || wall[key]) return;
+        seen[key] = true;
+        count++;
+        queue.push({ x: x, y: y });
+      });
+    }
+    return count === total;
+  }
+
+  // Стінки: у рядку 0 (там напис) — ні; біля старту й сейфа — ні;
+  // стінка не торкається іншої навіть кутом, і жодного закутка, куди не
+  // дійти (стінка з загином біля краю могла б відгородити клітинку).
+  // Повертає { 'x,y': true }.
+  function maze(level, keep) {
+    var wall = {};
+    function inside(c) { return c.x >= 0 && c.y >= 1 && c.x < level.w && c.y < level.h; }
+    function free(c) {
+      if (!inside(c)) return false;
+      if (keep.some(function (k) { return Math.abs(k.x - c.x) + Math.abs(k.y - c.y) <= 1; })) return false;
+      for (var dy = -1; dy <= 1; dy++) {
+        for (var dx = -1; dx <= 1; dx++) if (wall[(c.x + dx) + ',' + (c.y + dy)]) return false;
+      }
+      return true;
+    }
+    var made = 0;
+    for (var tries = 0; made < WALLS && tries < 500; tries++) {
+      var dir = Math.random() < 0.5 ? [1, 0] : [0, 1];
+      var c = { x: random(level.w), y: 1 + random(level.h - 1) };
+      var cells = [];
+      for (var i = 0, len = 2 + random(3); i < len; i++) cells.push({ x: c.x + dir[0] * i, y: c.y + dir[1] * i });
+      if (Math.random() < 0.4) {   // загин наприкінці
+        var end = cells[cells.length - 1], turn = Math.random() < 0.5 ? 1 : -1;
+        for (var j = 1, bend = 1 + random(2); j <= bend; j++) {
+          cells.push({ x: end.x + dir[1] * turn * j, y: end.y + dir[0] * turn * j });
+        }
+      }
+      if (!cells.every(free)) continue;
+      cells.forEach(function (w) { wall[w.x + ',' + w.y] = true; });
+      if (reachable(level, wall, keep[0])) { made++; continue; }
+      cells.forEach(function (w) { delete wall[w.x + ',' + w.y]; });
+    }
+    return wall;
+  }
+
+  // Вільні клітинки, далеко від героя і не біля сейфа.
+  function floor(level, start, safe, wall) {
     var cells = [];
     for (var y = 1; y < level.h; y++) {
       for (var x = 0; x < level.w; x++) {
         var c = { x: x, y: y };
-        var far = function (p, r) { return Math.abs(p.x - c.x) > r || Math.abs(p.y - c.y) > r; };
-        if (far(start, 2) && far(safe, 1)) cells.push(c);
+        if (!wall[x + ',' + y] && !near(c, start, 2) && !near(c, safe, 1)) cells.push(c);
       }
     }
+    return cells;
+  }
+
+  // n клітинок з вільних — не впритул одна до одної й до taken.
+  function spots(n, cells, taken) {
     var picked = [];
-    Game.task.shuffle(cells).forEach(function (c) {
+    Game.task.shuffle(cells.slice()).forEach(function (c) {
       if (picked.length >= n) return;
-      var near = picked.some(function (p) { return Math.abs(p.x - c.x) < 2 && Math.abs(p.y - c.y) < 2; });
-      if (!near) picked.push(c);
+      var busy = picked.concat(taken).some(function (p) { return near(p, c, 1); });
+      if (!busy) picked.push(c);
     });
     return picked;
   }
 
-  // Ліхтарик: світло навколо героя, напівтемрява довкола, де вже світив —
-  // темнувато. Те, що освітлено вперше, — знайдено.
+  // Павутина — у кутку клітинки, де з двох боків стіна чи край кімнати.
+  function webs(level, wall) {
+    function blocked(x, y) { return x < 0 || y < 1 || x >= level.w || y >= level.h || wall[x + ',' + y]; }
+    var corners = [];
+    for (var y = 1; y < level.h; y++) {
+      for (var x = 0; x < level.w; x++) {
+        if (wall[x + ',' + y]) continue;
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (s) {
+          if (blocked(x + s[0], y) && blocked(x, y + s[1])) corners.push({ x: x, y: y, sx: s[0], sy: s[1] });
+        });
+      }
+    }
+    return spots(WEBS, corners, []);
+  }
+
+  // ─── ліхтарик ───────────────────────────────────────────────────────
+
+  // Світло навколо героя, напівтемрява довкола, де вже світив — темнувато.
+  // Те, що освітлено вперше, — знайдено.
   function light(at, level) {
     room.torch.style.left = 'calc(var(--t) * ' + (at.x - 2) + ')';
     room.torch.style.top = 'calc(var(--t) * ' + (at.y - 2) + ')';
@@ -116,6 +206,7 @@
         cell.className = d <= LIGHT ? 'lit' : d <= GLOW ? 'dim' : room.seen[y][x] ? 'seen' : '';
       });
     });
+    room.walls.forEach(function (w) { w.el.classList.toggle('near', d2(at, w) <= GLOW); });
     room.digits.forEach(function (dg) {
       if (dg.found) return;
       var d = d2(at, dg);
@@ -129,26 +220,63 @@
     });
   }
 
+  // Знайшов: цифра спалахує, трохи світиться — і зникає. Вгорі — зірочка.
   function found(dg, level) {
     dg.found = true;
     dg.el.style.opacity = '';
     level.add(dg.el);   // наверх, над темрявою — знайдена цифра світиться
     dg.el.classList.add('found');
+    setTimeout(function () {
+      dg.el.classList.add('gone');
+      setTimeout(function () { if (dg.el.parentNode) dg.el.parentNode.removeChild(dg.el); }, 600);
+    }, SHOW_MS);
+
     var n = room.order.push(dg);
-    var slot = room.slots[n - 1];
-    slot.textContent = dg.value;
-    slot.classList.add('filled');
+    room.slots[n - 1].classList.add('filled');
     Game.sound.play('letter', 1 + (n - 1) * 0.12);
-    level.toast('Цифра ' + dg.value + '!');
+    level.toast('Цифра ' + dg.value + '! Запам\'ятай!');
     if (n < room.digits.length) return;
 
+    var batch = room.batch;
     setTimeout(function () {
-      if (level.closed()) return;
+      if (level.closed() || batch !== room.batch) return;
       Game.sound.play('right');
-      level.title('Усі цифри є! Біжи до сейфа');
+      level.title('Запам\'ятав цифри? Біжи до сейфа!');
       room.lamp.classList.add('ok');
       room.safe.classList.add('ready');
     }, 700);
+  }
+
+  // Сховати цифри в кімнаті (на початку і коли розбіглися) — не там,
+  // де зараз світить ліхтарик героя.
+  function hide(level, hero) {
+    room.batch++;
+    room.digits.forEach(function (dg) { if (dg.el.parentNode) dg.el.parentNode.removeChild(dg.el); });
+    room.digits = [];
+    room.order = [];
+    room.slots.forEach(function (s) { s.classList.remove('filled'); });
+
+    var taken = room.friends.concat(room.decor);
+    var dark = room.floor.filter(function (c) { return !near(c, hero, 2); });
+    var where = spots(room.values.length, dark, taken);
+    room.values.forEach(function (v, i) {
+      var dg = { x: where[i].x, y: where[i].y, value: v, found: false };
+      dg.el = el('div', 'dr-digit', v);
+      room.darkEl.parentNode.insertBefore(dg.el, room.darkEl);   // під темряву
+      level.place(dg.el, dg.x, dg.y);
+      room.digits.push(dg);
+    });
+  }
+
+  // Замок не відчинили — цифри розбіглися: нові, в інших місцях.
+  function scatter(level, at) {
+    room.values = digits(room.kind);
+    hide(level, at);
+    room.lamp.classList.remove('ok');
+    room.safe.classList.remove('ready');
+    level.title('Цифри розбіглися! Шукай знову');
+    level.toast('Цифри розбіглися! Шукай знову', 2400);
+    light(at, level);
   }
 
   function say(text, at, level) {
@@ -174,8 +302,8 @@
         var s = level.add(el('div', 'dr-glint'));
         level.place(s, dg.x, dg.y);
         setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 1000);
-        glint(level);
       }
+      glint(level);
     }, GLINT_MS);
   }
 
@@ -190,56 +318,60 @@
 
     return {
       title: KINDS[kind].title,
-      render: function (box, finish) {
-        // підказка: що знайшов у кімнаті
-        var clue = el('div', 'lock-clue');
-        var cards = shown.map(function (v, i) {
-          if (kind === 'sum' && i > 0) clue.appendChild(el('span', '', '+'));
-          return clue.appendChild(el('div', 'lock-card', v));
-        });
-        if (kind === 'sum') clue.appendChild(el('span', '', '= ?'));
-        box.appendChild(clue);
+      render: function (box, finish, fail) {
+        // скільки ще спроб — сердечка
+        var hearts = el('div', 'lock-hearts');
+        var heartEls = [];
+        for (var h = 0; h < TRIES; h++) heartEls.push(hearts.appendChild(el('span', '', '❤')));
+        box.appendChild(hearts);
 
         // екранчик замка
         var screen = el('div', 'lock-screen');
         var cells = code.map(function () { return screen.appendChild(el('div', 'lock-cell')); });
         box.appendChild(screen);
 
-        var pos = 0, solved = false;
+        var typed = [], tries = TRIES, wait = false, solved = false;
         function mark() {
-          cells.forEach(function (c, i) { c.classList.toggle('current', i === pos); });
-          if (kind === 'digits') cards.forEach(function (c, i) {
-            c.classList.toggle('next', i === pos);
-            c.classList.toggle('used', i < pos);
+          cells.forEach(function (c, i) {
+            c.textContent = i < typed.length ? typed[i] : '';
+            c.classList.toggle('current', i === typed.length);
           });
         }
         mark();
 
-        var keys = el('div', 'lock-keys');
-        var buttons = {};
-        function press(n) {
-          if (solved) return;
-          Game.sound.play('click');
-          if (n !== code[pos]) {
-            Game.sound.play('wrong');
-            var b = buttons[n];
-            b.classList.remove('wrong'); void b.offsetWidth; b.classList.add('wrong');
-            screen.classList.remove('bad'); void screen.offsetWidth; screen.classList.add('bad');
+        function check() {
+          var right = typed.every(function (n, i) { return n === code[i]; });
+          if (right) {
+            solved = true;
+            screen.classList.add('ok');
+            Game.sound.play('right');
+            setTimeout(finish, 1000);
             return;
           }
-          cells[pos].textContent = n;
-          pos++;
+          Game.sound.play('wrong');
+          tries--;
+          heartEls[tries].classList.add('lost');
+          screen.classList.remove('bad'); void screen.offsetWidth; screen.classList.add('bad');
+          wait = true;
+          setTimeout(function () {
+            if (!tries) { fail(); return; }
+            wait = false;
+            typed = [];
+            mark();
+          }, 900);
+        }
+
+        var keys = el('div', 'lock-keys');
+        function press(n) {
+          if (solved || wait) return;
+          Game.sound.play('click');
+          typed.push(n);
           mark();
-          if (pos < code.length) return;
-          solved = true;
-          screen.classList.add('ok');
-          Game.sound.play('right');
-          setTimeout(finish, 1000);
+          if (typed.length === code.length) check();
         }
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].forEach(function (n) {
           var b = keys.appendChild(el('button', 'lock-key', n));
           b.addEventListener('click', function () { this.blur(); press(n); });
-          buttons[n] = b;
         });
         box.appendChild(keys);
 
@@ -267,6 +399,7 @@
       if (level.closed()) return;
       room.darkEl.classList.add('off');
       room.torch.hidden = true;
+      room.walls.forEach(function (w) { w.el.classList.add('near'); });
       room.friends.forEach(function (f) { greet(f, level); });
     }, 900);
     level.finish(4200);
@@ -274,32 +407,40 @@
 
   Game.registerQuestType({
     id: 'dark-room',
-    title: 'Темно! Шукай з ліхтариком цифри',
+    title: 'Темно! Знайди цифри й запам\'ятай',
 
     start: function (level) {
       var kind = kindNow();
       var start = { x: 0, y: level.h - 1 };
       var safeAt = { x: level.w - 1, y: 2 };   // не в рядку 0 — там напис і ✕
-      var values = digits(kind);
-      var where = spots(values.length + FRIENDS_COUNT, level, start, safeAt);
+      var wall = maze(level, [start, safeAt]);
+      var cells = floor(level, start, safeAt, wall);
 
-      room = { kind: kind, safeAt: safeAt, prev: start, digits: [], friends: [], order: [], slots: [], dark: [], seen: [] };
+      room = {
+        kind: kind, safeAt: safeAt, prev: start, floor: cells, batch: 0, values: digits(kind),
+        digits: [], friends: [], decor: [], walls: [], order: [], slots: [], dark: [], seen: [],
+      };
 
       level.add(el('div', 'dr-room'));
 
+      // під темрявою: свічки й павутина — їх видно, коли посвітиш
+      webs(level, wall).forEach(function (w) {
+        var web = level.add(level.image('hw-web', 'dr-web'));
+        web.style.scale = (-w.sx) + ' ' + (-w.sy);   // картинка — для лівого верхнього кута
+        level.place(web, w.x, w.y);
+      });
+      var where = spots(FRIENDS_COUNT + CANDLES + PUMPKINS, cells, []);
+      room.decor = where.slice(FRIENDS_COUNT);
+      where.slice(FRIENDS_COUNT, FRIENDS_COUNT + CANDLES).forEach(function (at) {
+        level.place(level.add(level.image('hw-candle', 'dr-decor')), at.x, at.y);
+      });
+
       Game.task.shuffle(FRIENDS.slice()).slice(0, FRIENDS_COUNT).forEach(function (f, i) {
-        var at = where[values.length + i];
+        var at = where[i];
         var friend = { x: at.x, y: at.y, says: f.says, met: false };
         friend.el = level.add(level.image(f.image, 'dr-friend'));
         level.place(friend.el, at.x, at.y);
         room.friends.push(friend);
-      });
-
-      values.forEach(function (v, i) {
-        var dg = { x: where[i].x, y: where[i].y, value: v, found: false };
-        dg.el = level.add(el('div', 'dr-digit', v));
-        level.place(dg.el, dg.x, dg.y);
-        room.digits.push(dg);
       });
 
       // темрява — клітинками, розмита, щоб світло було кругле й м'яке
@@ -316,15 +457,30 @@
       }
       room.torch = level.add(el('div', 'dr-torch'));
 
+      // над темрявою: стіни лабіринту й гарбузи-ліхтарики
+      Object.keys(wall).forEach(function (key) {
+        var xy = key.split(',');
+        var w = { x: +xy[0], y: +xy[1], el: level.add(el('div', 'dr-wall')) };
+        level.place(w.el, w.x, w.y);
+        level.wall(w.x, w.y);
+        room.walls.push(w);
+      });
+      where.slice(FRIENDS_COUNT + CANDLES).forEach(function (at) {
+        level.place(level.add(level.image('hw-pumpkin', 'dr-pumpkin')), at.x, at.y);
+      });
+
       // сейф видно й у темряві — до нього треба дійти
       room.safe = level.add(level.image('safe', 'dr-safe'));
       level.place(room.safe, safeAt.x, safeAt.y);
+      level.solid(safeAt.x, safeAt.y);   // шлях до сейфа — так, крізь сейф — ні
       room.lamp = level.add(el('div', 'dr-lamp'));
       level.place(room.lamp, safeAt.x, safeAt.y);
 
+      // угорі — скільки цифр знайдено: зірочки, а не самі цифри
       var tray = level.add(el('div', 'dr-tray'));
-      values.forEach(function () { room.slots.push(tray.appendChild(el('div', 'dr-slot'))); });
+      room.values.forEach(function () { room.slots.push(tray.appendChild(el('div', 'dr-slot', '★'))); });
 
+      hide(level, start);
       light(start, level);
       glint(level);
       return start;
@@ -338,7 +494,8 @@
       }
 
       // сейф важкий — герой у нього впирається і відскакує на крок назад
-      level.move(room.prev.x, room.prev.y);
+      var back = room.prev;
+      level.move(back.x, back.y);
       var left = room.digits.length - room.order.length;
       if (left) {
         Game.sound.play('wrong');
@@ -352,7 +509,7 @@
         Game.task.open(lock(), function (solved) {
           if (level.closed()) return;
           if (solved) open(level);
-          else level.toast('Сейф чекає на код — підійди ще раз');   // ✕ у замку
+          else scatter(level, back);   // ✕ у замку або три помилки
         });
       }, 300);
       return true;

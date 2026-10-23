@@ -229,6 +229,24 @@
       linear-gradient(90deg, rgba(10, 12, 30, .35) 2px, transparent 2px) 0 0 / var(--t) var(--t),
       radial-gradient(ellipse at 50% 40%, #6a74a6 0%, #474f7c 60%, #2e3354 100%);
   }
+  .dr-wall {   /* стіна лабіринту: фіолетові цеглини, у темряві ледь видно */
+    position: absolute; width: var(--t); height: var(--t); box-sizing: border-box; pointer-events: none;
+    background:
+      linear-gradient(rgba(20, 10, 35, .55) 2px, transparent 2px) 0 0 / 100% 33.4%,
+      linear-gradient(90deg, rgba(20, 10, 35, .55) 2px, transparent 2px) 0 0 / 50% 66.8%,
+      linear-gradient(90deg, rgba(20, 10, 35, .55) 2px, transparent 2px) 25% 33.4% / 50% 66.8%,
+      linear-gradient(#6d4f9c, #4a3570);
+    border-radius: calc(var(--t) * .08); box-shadow: inset 0 calc(var(--t) * -.08) 0 rgba(0, 0, 0, .3);
+    filter: brightness(.45); transition: filter 260ms;
+  }
+  .dr-wall.near { filter: none; }
+  .dr-web, .dr-decor, .dr-pumpkin { position: absolute; width: var(--t); height: var(--t); pointer-events: none; }
+  .dr-decor { scale: .75; }
+  .dr-pumpkin { scale: .8; animation: drpumpkin 1.4s ease-in-out infinite alternate; }
+  @keyframes drpumpkin {
+    from { filter: drop-shadow(0 0 calc(var(--t) * .12) rgba(255, 150, 30, .7)); }
+    to   { filter: drop-shadow(0 0 calc(var(--t) * .35) rgba(255, 170, 40, 1)); }
+  }
   .dr-friend, .dr-digit, .dr-safe, .dr-lamp, .dr-say, .dr-glint, .dr-prize {
     position: absolute; width: var(--t); height: var(--t); pointer-events: none;
   }
@@ -244,6 +262,7 @@
     text-shadow: 0 0 calc(var(--t) * .2) rgba(255, 200, 40, .95);
     animation: drfound 700ms ease-out, drglow 1.2s 700ms ease-in-out infinite alternate;
   }
+  .dr-digit.gone { opacity: 0; scale: .2; transition: opacity 500ms, scale 500ms; }
   @keyframes drfound { from { scale: .4; } 40% { scale: 1.5; } to { scale: 1; } }
   @keyframes drglow { to { text-shadow: 0 0 calc(var(--t) * .35) rgba(255, 220, 90, 1); } }
   .dr-dark { position: absolute; inset: 0; pointer-events: none; filter: blur(calc(var(--t) * .28)); transition: opacity 1400ms; }
@@ -312,11 +331,12 @@
     width: calc(var(--t) * .48); height: calc(var(--t) * .48); box-sizing: border-box; border-radius: calc(var(--t) * .1);
     border: calc(var(--t) * .03) dashed rgba(255, 255, 255, .45);
     display: flex; align-items: center; justify-content: center;
-    font: 900 calc(var(--t) * .34)/1 system-ui, sans-serif; color: #ffe27a;
+    font: 900 calc(var(--t) * .34)/1 system-ui, sans-serif; color: rgba(255, 255, 255, .2);
   }
+  .dr-slot.filled { color: #ffe27a; }
   .dr-slot.filled { border-style: solid; border-color: #ffe27a; background: rgba(255, 224, 90, .15); animation: drfound 500ms ease-out; }
   @media (prefers-reduced-motion: reduce) {
-    .twinkle, .dr-digit.found, .dr-safe.ready, .dr-lamp::after, .dr-prize, .dr-friend.hop { animation: none; }
+    .twinkle, .dr-digit.found, .dr-safe.ready, .dr-lamp::after, .dr-prize, .dr-friend.hop, .dr-pumpkin { animation: none; }
   }
 
   /* ─── вікно завдання ─── */
@@ -417,18 +437,8 @@
   }
 
   /* кодовий замок сейфа (src/quests/dark-room.js) */
-  .lock-clue {
-    display: flex; gap: 12px; justify-content: center; align-items: center; margin: 8px 0 16px;
-    font: 900 44px/1 system-ui, sans-serif;
-  }
-  .lock-card {
-    width: 64px; height: 80px; border-radius: 12px; box-sizing: border-box;
-    display: flex; align-items: center; justify-content: center;
-    background: #fff3c4; border: 3px solid #e6c65a; color: #7a5a00; font: 900 54px/1 system-ui, sans-serif;
-    transition: opacity 200ms, scale 200ms;
-  }
-  .lock-card.next { border-color: #f2a01e; scale: 1.12; box-shadow: 0 0 14px 4px rgba(255, 200, 60, .7); }
-  .lock-card.used { opacity: .35; }
+  .lock-hearts { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; font-size: 30px; color: #e5484d; }
+  .lock-hearts .lost { opacity: .2; filter: grayscale(1); transition: opacity 400ms; }
   .lock-screen {
     display: flex; gap: 10px; justify-content: center; width: max-content; margin: 0 auto 18px;
     padding: 12px 18px; border-radius: 14px; background: #1d2338; box-shadow: inset 0 3px 8px rgba(0, 0, 0, .6);
