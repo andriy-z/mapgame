@@ -70,7 +70,8 @@
 
   // ─── Картинки до слів (src/content/words.js) ────────────────────────
   ['sun', 'fish', 'house', 'beetle', 'mushroom', 'star', 'cloud', 'heart', 'ball', 'boat',
-   'cat', 'owl', 'frog', 'pear', 'cherry', 'lemon', 'watermelon', 'cheese', 'egg', 'cake', 'key', 'cup']
+   'cat', 'owl', 'frog', 'pear', 'cherry', 'lemon', 'watermelon', 'cheese', 'egg', 'cake', 'key', 'cup',
+   'banana', 'pizza', 'hat', 'tooth', 'eye', 'poppy', 'leaf', 'spider', 'lamp', 'whale']
     .forEach(function (name) { add('pic-' + name); });
 
   // ─── Звуки ──────────────────────────────────────────────────────────

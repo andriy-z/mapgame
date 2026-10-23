@@ -25,3 +25,15 @@ Game.registerWord({ word: 'ЯЙЦЕ',  image: 'pic-egg' });
 Game.registerWord({ word: 'ТОРТ',  image: 'pic-cake' });
 Game.registerWord({ word: 'КЛЮЧ',  image: 'pic-key' });
 Game.registerWord({ word: 'ЧАШКА', image: 'pic-cup' });
+
+// Третя порція.
+Game.registerWord({ word: 'БАНАН', image: 'pic-banana' });
+Game.registerWord({ word: 'ПІЦА',  image: 'pic-pizza' });
+Game.registerWord({ word: 'ШАПКА', image: 'pic-hat' });
+Game.registerWord({ word: 'ЗУБ',   image: 'pic-tooth' });
+Game.registerWord({ word: 'ОКО',   image: 'pic-eye' });
+Game.registerWord({ word: 'МАК',   image: 'pic-poppy' });
+Game.registerWord({ word: 'ЛИСТ',  image: 'pic-leaf' });
+Game.registerWord({ word: 'ПАВУК', image: 'pic-spider' });
+Game.registerWord({ word: 'ЛАМПА', image: 'pic-lamp' });
+Game.registerWord({ word: 'КИТ',   image: 'pic-whale' });
