@@ -83,6 +83,7 @@
   /* майбутні слоти: feet — під колом, top — над колом */
   .token .slot-feet { left: 21%; top: 57%; width: 60%; height: 60%; z-index: 2; }
   .token .slot-feet.art-duck { left: 30%; top: 62%; width: 46%; height: 46%; }   /* качечка — маленький значок */
+  .token .slot-feet.art-horse { left: 40%; top: 45%; width: 70%; height: 70%; }   /* кінь-палка — голова праворуч перед колом */
   .token .slot-feet.art-stilts { left: 15%; top: 50%; width: 70%; height: 80%; z-index: 0; }   /* ходулі — довгі, з-під кола */
   .token .slot-top  { left: 25%; top: -18%; width: 50%; height: 34%; z-index: 2; }
   /* антенки — з-за кола (корінці ховаються), пружинять; зірки тоді вище */
@@ -335,6 +336,90 @@
   }
   .dr-slot.filled { color: #ffe27a; }
   .dr-slot.filled { border-style: solid; border-color: #ffe27a; background: rgba(255, 224, 90, .15); animation: drfound 500ms ease-out; }
+  /* замок (src/quests/castle.js): тло — одна картинка, зверху двері, ключі, мешканці */
+  .cs-bg { position: absolute; left: 0; top: 0; pointer-events: none; }   /* стіни й підлоги — castle-bg.png */
+  .cs-door, .cs-key, .cs-friend, .cs-thing, .cs-prize, .cs-steed, .cs-glow, .cs-spark, .cs-pocket, .cs-tower, .cs-banner, .cs-torch, .cs-gate, .cs-tag, .cs-sign, .cs-ask, .cs-puff {
+    position: absolute; width: var(--t); height: var(--t); pointer-events: none;
+  }
+  .cs-tower { scale: 1.15; translate: 0 calc(var(--t) * -.08); }
+  .cs-banner { scale: .8; }
+  .cs-torch { scale: .6; translate: 0 calc(var(--t) * -.1); animation: cstorch 500ms ease-in-out infinite alternate; }
+  @keyframes cstorch {
+    from { filter: drop-shadow(0 0 calc(var(--t) * .1) rgba(255, 170, 40, .7)); }
+    to   { filter: drop-shadow(0 0 calc(var(--t) * .3) rgba(255, 190, 60, 1)) brightness(1.1); }
+  }
+  .cs-gate { scale: 1.1; }
+  .cs-door.shake { animation: csshake 400ms ease-in-out; }
+  @keyframes csshake { 20%, 60% { translate: calc(var(--t) * -.07) 0; } 40%, 80% { translate: calc(var(--t) * .07) 0; } }
+  .cs-sign {   /* золота табличка з конем на дверях стайні — головна кімната */
+    width: calc(var(--t) * .46); height: calc(var(--t) * .46); translate: calc(var(--t) * .27) calc(var(--t) * -.12);
+    border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff2a8, #ffd23f 55%, #e0a00c);
+    box-shadow: 0 0 0 calc(var(--t) * .03) var(--ink), 0 0 calc(var(--t) * .2) rgba(255, 224, 90, .9);
+    padding: calc(var(--t) * .04); box-sizing: border-box;
+  }
+  .cs-tag {   /* наліпка на дверях: ключ, який до них потрібен */
+    width: calc(var(--t) * .42); height: calc(var(--t) * .42); translate: calc(var(--t) * .55) calc(var(--t) * .5);
+    border-radius: 50%; background: #fff; box-shadow: 0 0 0 calc(var(--t) * .03) var(--ink);
+    padding: calc(var(--t) * .03); box-sizing: border-box; animation: drfound 500ms ease-out;
+  }
+  .cs-ask {   /* бульбашка над дверима: «потрібен ось такий ключ» */
+    translate: 0 calc(var(--t) * -.85); z-index: 2; box-sizing: border-box; padding: calc(var(--t) * .12);
+    background: #fff; border-radius: 50%; border: calc(var(--t) * .04) solid var(--ink);
+    animation: csask 2600ms ease-out both;
+  }
+  .cs-ask img { width: 100%; height: 100%; display: block; }
+  .cs-ask::after {
+    content: ''; position: absolute; left: 42%; bottom: calc(var(--t) * -.14);
+    border: calc(var(--t) * .09) solid transparent; border-top-color: var(--ink);
+  }
+  @keyframes csask { from { opacity: 0; scale: .4; } 10% { opacity: 1; scale: 1.15; } 18% { scale: 1; } 85% { opacity: 1; } to { opacity: 0; } }
+  .cs-key { scale: .75; animation: cskey 900ms ease-in-out infinite alternate; }
+  @keyframes cskey {
+    from { translate: 0 calc(var(--t) * .04); filter: drop-shadow(0 0 calc(var(--t) * .05) rgba(255, 255, 255, .6)); }
+    to   { translate: 0 calc(var(--t) * -.06); filter: drop-shadow(0 0 calc(var(--t) * .2) rgba(255, 255, 255, 1)); }
+  }
+  .cs-key.taken { opacity: 0; scale: 1.4; translate: 0 calc(var(--t) * -.8); transition: opacity 500ms, scale 500ms, translate 500ms; animation: none; }
+  .cs-friend { scale: .85; }
+  .cs-friend.hop, .cs-thing.hop { animation: drhop 500ms ease-out; }
+  .cs-thing { scale: .88; }
+  .cs-thing.boom { animation: csboom 500ms ease-out; }
+  @keyframes csboom { 15% { translate: calc(var(--t) * -.15) 0; scale: .95 .8; } }
+  .cs-puff {   /* дим з гармати */
+    background: radial-gradient(circle, rgba(255, 255, 255, .95) 0 30%, rgba(220, 220, 220, .6) 45%, transparent 65%);
+    animation: cspuff 900ms ease-out both;
+  }
+  @keyframes cspuff { from { opacity: 1; scale: .3; translate: calc(var(--t) * .3) calc(var(--t) * -.1); } to { opacity: 0; scale: 1.8; translate: calc(var(--t) * .7) calc(var(--t) * -.4); } }
+  .cs-steed {   /* справжній кінь — мета, світиться */
+    scale: 1.5; translate: 0 calc(var(--t) * .12);
+    animation: cssteed 1.1s ease-in-out infinite alternate;
+    z-index: 1;
+  }
+  @keyframes cssteed {
+    from { filter: drop-shadow(0 0 calc(var(--t) * .08) rgba(255, 224, 90, .8)); }
+    to   { filter: drop-shadow(0 0 calc(var(--t) * .32) rgba(255, 224, 90, 1)); }
+  }
+  .cs-steed.hop { animation: cssteedhop 500ms ease-out; filter: drop-shadow(0 0 calc(var(--t) * .3) rgba(255, 224, 90, 1)); }
+  @keyframes cssteedhop { 40% { translate: 0 calc(var(--t) * -.25); scale: 1.4 1.6; } }
+  .cs-glow {   /* золоте світло на підлозі під конем */
+    scale: 2.6 1.9;
+    background: radial-gradient(closest-side, rgba(255, 255, 235, 1), rgba(255, 236, 140, .8) 40%, rgba(255, 210, 63, .3) 70%, transparent);
+    mix-blend-mode: screen;
+    animation: csglow 1.1s ease-in-out infinite alternate;
+  }
+  @keyframes csglow { from { opacity: .6; } to { opacity: 1; } }
+  .cs-spark {   /* іскорки довкола коня */
+    width: calc(var(--t) * .45); height: calc(var(--t) * .45);
+    background: radial-gradient(circle, #fff 0%, rgba(255, 240, 180, .9) 15%, transparent 45%);
+    clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%);
+    animation: drglint 1600ms ease-in-out infinite;
+  }
+  .cs-prize.won { animation: drprize 1100ms ease-out both, drfloat 900ms 1100ms ease-in-out infinite alternate; filter: drop-shadow(0 0 calc(var(--t) * .25) rgba(255, 224, 90, 1)); }
+  .cs-tray { min-width: calc(var(--t) * .5); min-height: calc(var(--t) * .5); }
+  .cs-tray:empty { visibility: hidden; }
+  .cs-pocket { position: static; width: calc(var(--t) * .55); height: calc(var(--t) * .55); animation: drfound 500ms ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .cs-key, .cs-prize, .cs-steed, .cs-glow, .cs-spark, .cs-friend.hop, .cs-thing.hop, .cs-thing.boom, .cs-door.shake, .cs-torch, .cs-tag, .cs-ask, .cs-puff { animation: none; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .twinkle, .dr-digit.found, .dr-safe.ready, .dr-lamp::after, .dr-prize, .dr-friend.hop, .dr-pumpkin { animation: none; }
   }
@@ -545,6 +630,7 @@
 <script src="src/artifacts/telescope.js"></script>
 <script src="src/artifacts/hoverboard.js"></script>
 <script src="src/artifacts/antennae.js"></script>
+<script src="src/artifacts/horse.js"></script>
 <script src="src/bonuses/wings.js"></script>
 <script src="src/bonuses/boots.js"></script>
 <script src="src/bonuses/duck.js"></script>
@@ -557,6 +643,7 @@
 <script src="src/bonuses/telescope.js"></script>
 <script src="src/bonuses/hoverboard.js"></script>
 <script src="src/bonuses/antennae.js"></script>
+<script src="src/bonuses/horse.js"></script>
 <script src="src/content/words.js"></script>
 <script src="src/maps/poc-01.js"></script>
 <script src="src/mapgen/rng.js"></script>
@@ -577,6 +664,7 @@
 <script src="src/tasks/count.js"></script>
 <script src="src/core/quest.js"></script>
 <script src="src/quests/dark-room.js"></script>
+<script src="src/quests/castle.js"></script>
 <script src="src/core/engine.js"></script>
 <script src="src/core/input.js"></script>
 <script>

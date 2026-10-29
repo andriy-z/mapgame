@@ -407,6 +407,7 @@
 
   Game.registerQuestType({
     id: 'dark-room',
+    mark: 'portal',   // вхід на карті — телепорт
     title: 'Темно! Знайди цифри й запам\'ятай',
 
     start: function (level) {

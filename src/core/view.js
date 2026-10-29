@@ -57,12 +57,14 @@
       map.finish.forEach(function (f) { world.appendChild(img('finish', f.x, f.y, 'mark')); });
 
       // Книжка — завдання на дорозі; позначка-приз (крильця, аватарка
-      // в золотому колі) — бонусне завдання збоку; вир — телепорт у космос.
+      // в золотому колі) — бонусне завдання збоку; вир чи брама — вхід у
+      // квест (картинка — mark у типі квесту).
       taskEls = state.tasks.map(function (t) {
         if (t.done) return null;
         var el;
         if (t.quest) {
-          el = img('portal', t.x, t.y, 'task-mark portal');
+          var mark = Game.questTypes[t.quest].mark;
+          el = img(mark, t.x, t.y, 'task-mark ' + mark);
         } else if (t.prize) {
           el = Game.token.create(Game.bonuses[t.prize.bonus].marker(t.prize), 'cell task-mark prize');
           place(el, t.x, t.y);

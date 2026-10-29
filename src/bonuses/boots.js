@@ -1,4 +1,4 @@
-// Бонус «чоботи-скороходи»: +3 кроки щоходу до кінця гри.
+// Бонус «чоботи-скороходи»: +2 кроки щоходу до кінця гри.
 
 Game.registerBonus({
   id: 'boots',
@@ -10,6 +10,6 @@ Game.registerBonus({
 
   give: function (hero) {
     var lost = Game.rules.equip(hero, 'boots');
-    return (lost ? 'Чоботи-скороходи замість ' + Game.artifacts[lost].nameOf : 'Чоботи-скороходи') + ': +3 кроки!';
+    return (lost ? 'Чоботи-скороходи замість ' + Game.artifacts[lost].nameOf : 'Чоботи-скороходи') + ': +2 кроки!';
   },
 });

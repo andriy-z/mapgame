@@ -94,7 +94,8 @@ src/
   artifacts/           один файл на артефакт фішки (wings.js — крильця, boots.js — чоботи,
                        duck.js — качечка, stilts.js — ходулі, sled.js — санчата,
                        pepper.js — перчинка, telescope.js — підзорна труба,
-                       hoverboard.js — літаюча дошка, antennae.js — антенки)
+                       hoverboard.js — літаюча дошка, antennae.js — антенки,
+                       horse.js — кінь-палка)
   bonuses/             один файл на приз (wings, boots, duck, stilts, sled, pepper,
                        look.js — зміна лука; balloon.js — кулька і harmonica.js —
                        гармошка: разові, з методом act(game, done))
@@ -102,7 +103,7 @@ src/
                        build-word.js — скласти слово з літер, find-picture.js —
                        обрати картинку, spot-word.js — знайти слово без помилки,
                        count.js — приклад до 10)
-  quests/              один файл на космічний квест за телепортом
+  quests/              один файл на квест (dark-room.js — за телепортом, castle.js — за брамою)
                        (dark-room.js — темна кімната-лабіринт з ліхтариком)
   content/             вміст: words.js — слова з картинками,
                        avatars.js — аватарки фішок

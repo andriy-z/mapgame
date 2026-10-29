@@ -12,6 +12,7 @@
 // квесту ставить їх так, щоб до всього можна було дійти.
 //
 // Тип квесту (Game.registerQuestType) — це:
+//   mark                   — id картинки входу на карті (телепорт, брама);
 //   title                  — підказка вгорі: що треба зробити;
 //   start(level)           — розставити своє на рівні, повернути { x, y },
 //                            де з'явиться герой;
@@ -21,7 +22,8 @@
 // level.closed() — true, коли рівень уже закрили (для своїх таймерів),
 // level.move(x, y) — переставити героя,
 // level.wall(x, y) — поставити стіну (у start), level.isWall(x, y),
-// level.solid(x, y) — до цієї клітинки йти можна, а крізь неї — ні (сейф).
+// level.solid(x, y) — до цієї клітинки йти можна, а крізь неї — ні (сейф),
+// level.clear(x, y) — прибрати стіну чи solid (двері відчинились).
 // Виконав мету — тип кличе level.finish(ms): трохи милуємось (ms — скільки,
 // якщо треба довше, ніж звичайно) і назад на карту.
 
@@ -188,7 +190,7 @@
       cursor = null;
       planEls = [];
       walls = {};
-    solids = {};
+      solids = {};
 
       var stage = $('spaceStage');
       stage.innerHTML = '';
@@ -216,6 +218,7 @@
         move: function (x, y) { me.x = x; me.y = y; place(me.el, x, y); },
         wall: function (x, y) { walls[x + ',' + y] = true; },
         solid: function (x, y) { solids[x + ',' + y] = true; },
+        clear: function (x, y) { delete walls[x + ',' + y]; delete solids[x + ',' + y]; },
         isWall: isWall,
         // мету виконано: трохи милуємось — і назад на карту
         finish: function (ms) {

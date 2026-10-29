@@ -38,14 +38,18 @@
   // потрапляють випадкові, щоразу інші.
   var BONUSES = ['wings', 'boots', 'duck', 'stilts', 'sled', 'pepper', 'balloon', 'harmonica', 'look', 'look'];
 
-  // Телепорт у космос: стаєш — і герой сам-один летить на маленький рівень
-  // з квестом (src/quests/), друг чекає. Пройшов — приз, назад на те саме
-  // місце, і хід переходить до друга. Телепорт разовий. Скільки їх на карті,
-  // які квести і призи — випадково з цих списків.
-  var TELEPORT = { count: 1, quests: ['dark-room'], prizes: ['telescope', 'hoverboard', 'antennae'] };
+  // Квести: стаєш на вхід (телепорт, брама) — і герой сам-один іде на
+  // маленький рівень з квестом (src/quests/), друг чекає. Пройшов — приз,
+  // назад на те саме місце, і хід переходить до друга. Вхід разовий. На
+  // карті — по одному кожного квесту; приз — випадковий з його списку.
+  // Як вхід виглядає на карті — mark у типі квесту.
+  var QUESTS = [
+    { quest: 'dark-room', prizes: ['telescope', 'hoverboard', 'antennae'] },
+    { quest: 'castle', prizes: ['horse'] },
+  ];
 
   // Завдання на дорозі й бонусні: [{x, y, type, done, prize}], prize —
-  // null (книжка) або { bonus, avatar? }. Телепорт — те саме, але з quest
+  // null (книжка) або { bonus, avatar? }. Вхід у квест — те саме, але з quest
   // (id квесту) замість type.
   function placeTasks(map, heroes) {
     var onRoad = rules.placeTasks(map, TASKS.count);
@@ -73,10 +77,12 @@
       return t;
     });
 
-    // телепорти — теж збоку, подалі від книжок і призів
-    var portals = rules.placeBonuses(map, TELEPORT.count, tasks).map(function (t) {
-      t.quest = pick(TELEPORT.quests);
-      t.prize = { bonus: pick(TELEPORT.prizes) };
+    // входи в квести — теж збоку, подалі від книжок і призів; місць може
+    // знайтись менше — тоді випадає випадковий квест
+    var quests = Game.task.shuffle(QUESTS.slice());
+    var portals = rules.placeBonuses(map, quests.length, tasks).map(function (t, i) {
+      t.quest = quests[i].quest;
+      t.prize = { bonus: pick(quests[i].prizes) };
       return t;
     });
     return tasks.concat(portals);
@@ -299,7 +305,7 @@
         stop();
         return;
       }
-      // чоботи діють одразу: кроки цього ходу теж +3 (і навпаки —
+      // чоботи діють одразу: кроки цього ходу теж +2 (і навпаки —
       // проміняв чоботи на крильця, то й кроків менше)
       var bonus = Game.bonuses[task.prize.bonus];
       var before = rules.moves(h);
@@ -315,9 +321,9 @@
     });
   }
 
-  // Телепорт: герой летить у космос на квест (src/core/quest.js), друг
-  // чекає. Пройшов — зірка, приз, і хід переходить до друга (космос забирає
-  // весь хід). Повернувся сам (✕) — телепорт лишається, кроки теж.
+  // Телепорт чи брама: герой іде на квест (src/core/quest.js), друг
+  // чекає. Пройшов — зірка, приз, і хід переходить до друга (квест забирає
+  // весь хід). Повернувся сам (✕) — вхід лишається, кроки теж.
   function openQuest(task) {
     var h = hero(), index = state.active, game = state;
     view.showPlan(null);

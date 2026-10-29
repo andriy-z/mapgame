@@ -79,7 +79,7 @@
       return art && Math.random() < art.beep ? art.bonusSteps : 0;
     },
 
-    // Скільки кроків у героя за хід: свої плюс від артефактів (чоботи +3).
+    // Скільки кроків у героя за хід: свої плюс від артефактів (чоботи +2, кінь-палка +3).
     moves: function (hero) {
       return hero.artifacts.reduce(function (n, id) {
         return n + (Game.artifacts[id].steps || 0);
